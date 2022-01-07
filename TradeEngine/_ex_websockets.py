@@ -1,0 +1,239 @@
+import websockets
+import asyncio
+import json
+import traceback
+
+
+# Sockets for all of the Exchanges
+async def websocket_bin(self):
+    while self.running:
+        try:
+            # outer loop restarted every time the connection fails
+            print('connect to binance')
+            websocket = await websockets.connect("wss://stream.binance.com:9443/ws/!ticker@arr")
+            test = await websocket.send('{"method": "SUBSCRIBE", "params": ["!ticker@arr"], "id": 1}')
+            try:
+                while self.running:
+                    # listener loop
+                    try:
+                        message = await websocket.recv()
+                        message = json.loads(message)
+                        try:
+                            for msg in message:
+                                if not msg in ['result', 'id']:
+                                    self.a_binance.prices[msg['s']] = msg['c']
+                        except Exception as e:
+                            await self.my_msg('Binance Websocket Error: ' + str(e), False, False)
+                    except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosed):
+                        await asyncio.sleep(1)
+                        break  # inner loop
+
+                    if not self.a_binance.socket_connected:
+                        self.a_binance.socket_connected = True
+
+            except ConnectionRefusedError:
+                await self.my_msg('Binance Connection Refused: ' + str(e), True, False)
+            await asyncio.sleep(5)
+        except Exception as e:
+            await self.my_msg('Binance Websocket Secondary Error: ' + str(e), False, False)
+            await asyncio.sleep(5)
+
+
+async def websocket_binUS(self):
+    while self.running:
+        try:
+            # outer loop restarted every time the connection fails
+            print('connect to binance US')
+            websocket = await websockets.connect("wss://stream.binance.us:9443/ws/!ticker@arr")
+            test = await websocket.send('{"method": "SUBSCRIBE", "params": ["!ticker@arr"], "id": 1}')
+            try:
+                while self.running:
+                    # listener loop
+                    try:
+                        message = await websocket.recv()
+                        message = json.loads(message)
+                        try:
+                            for msg in message:
+                                if not msg in ['result', 'id']:
+                                    self.a_binanceUS.prices[msg['s']] = msg['c']
+                        except Exception as e:
+                            await self.my_msg('Binance US Websocket Error: ' + str(e) + ': ' + str(msg), False, False)
+                    except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosed):
+                        await asyncio.sleep(1)
+                        break  # inner loop
+
+                    if not self.a_binanceUS.socket_connected:
+                        self.a_binanceUS.socket_connected = True
+            except ConnectionRefusedError:
+                await self.my_msg('Binance US Connection Refused: ' + str(e), True, False)
+            await asyncio.sleep(5)
+        except Exception as e:
+            await self.my_msg('Binance US Websocket Secondary Error: ' + str(e), False, False)
+            await asyncio.sleep(5)
+
+
+async def websocket_bm(self):
+    while self.running:
+        try:
+            # outer loop restarted every time the connection fails
+            print('connect to BitMEX')
+            websocket = await websockets.connect("wss://ws.bitmex.com/realtime/?subscribe=trade")
+            # test = await websocket.send('{"method": "SUBSCRIBE", "params": ["!ticker@arr"], "id": 1}')
+            try:
+                while self.running:
+                    # listener loop
+                    try:
+                        message = await websocket.recv()
+                        message = json.loads(message)
+                        try:
+                            if 'data' in message.keys():
+                                for msg in message['data']:
+                                    self.a_bitmex.prices[msg['symbol']] = msg['price']
+                        except Exception as e:
+                            await self.my_msg('BitMEX Websocket Error: ' + str(e), False, False)
+                    except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosed):
+                        await asyncio.sleep(1)
+                        break  # inner loop
+                        # do stuff with reply object
+                    if not self.a_bitmex.socket_connected:
+                        self.a_bitmex.socket_connected = True
+            except ConnectionRefusedError:
+                await self.my_msg('BitMEX Connection Refused: ' + str(e), True, False)
+            await asyncio.sleep(5)
+        except Exception as e:
+            await self.my_msg('BitMEX US Websocket Secondary Error: ' + str(e), False, False)
+            await asyncio.sleep(5)
+
+
+async def websocket_cbp(self):
+    while self.running:
+        try:
+            # outer loop restarted every time the connection fails
+            print('connect to cbp')
+            cbp_sym = str(['"{}"'.format(t) for t in self.a_cbp.markets]).replace("'", "").replace('/', '-')
+            cbp_msg = '{"type": "subscribe", "product_ids":' + str(cbp_sym) + ', "channels": ["ticker", "heartbeat"]}'
+            websocket = await websockets.connect("wss://ws-feed.pro.coinbase.com/")
+            test = await websocket.send(cbp_msg)
+            try:
+                while self.running:
+                    # listener loop
+                    try:
+                        await asyncio.sleep(0)
+                        message = await websocket.recv()
+                        # print(len(message), message)
+                        try:
+                            message = json.loads(message)
+                            if message['type'] == 'ticker':
+                                self.a_cbp.prices[message['product_id'].replace('-', '')] = message['price']
+                        except Exception as e:
+                            if message:
+                                await self.my_msg('Coinbase Pro Websocket Error: ' + str(e), False, False)
+                    except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosed):
+                        await asyncio.sleep(1)
+                        break  # inner loop
+
+                    if not self.a_cbp.socket_connected:
+                        self.a_cbp.socket_connected = True
+            except ConnectionRefusedError:
+                await self.my_msg('Coinbase Pro Connection Refused: ' + str(e), True, False)
+            await asyncio.sleep(5)
+        except Exception as e:
+            await self.my_msg('Coinbase Pro Websocket Secondary Error: ' + str(e), False, False)
+            await asyncio.sleep(5)
+
+
+async def websocket_ftx(self):
+    while self.running:
+        try:
+            # outer loop restarted every time the connection fails
+            ftx_sym = [t for t in self.a_ftx.markets]
+            ftx_msg = []
+            for sym in ftx_sym:
+                ftx_msg.append('{"op": "subscribe", "channel": "ticker", "market": "' + str(sym) + '"}')
+            websocket = await websockets.connect("wss://ftx.com/ws/")
+            for msg in ftx_msg:
+                test = await websocket.send(msg)
+            try:
+                while self.running:
+                    # listener loop
+                    try:
+                        message = await websocket.recv()
+                        try:
+                            message = json.loads(message)
+                            if 'data' in message:
+                                self.a_ftx.prices[message['market'].replace('-', '').replace('/', '')] = message['data']['last']
+                        except Exception as e:
+                            await self.my_msg('FTX Websocket Error: ' + str(e), False, False)
+                    except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosed):
+                        await asyncio.sleep(1)
+                        break  # inner loop, try reconnect
+
+                    if not self.a_ftx.socket_connected:
+                        self.a_ftx.socket_connected = True
+
+            except ConnectionRefusedError:
+                await self.my_msg('FTX Connection Refused: ' + str(e), True, False)
+            await asyncio.sleep(5)
+        except Exception as e:
+            await self.my_msg('FTX Websocket Secondary Error: ' + str(e), False, False)
+            await asyncio.sleep(5)
+
+
+async def websocket_kraken(self):
+    while self.running:
+        try:
+            # outer loop restarted every time the connection fails
+            print('connecting to kraken')
+            kraken_syms = [t for t in self.a_kraken.markets]
+            kraken_msg = []#['{"event":"subscribe", "subscription":{"name":"ticker"}, "pair":["BTC/USD"]}']
+            i = 0
+            j = i + 20
+            while j < len(kraken_syms):
+                if j >= len(kraken_syms):
+                    j = len(kraken_syms) - 1
+
+                kraken_sym = str(['"{}"'.format(t) for t in kraken_syms[i:j]]).replace("'", "")
+                kraken_msg.append('{"event":"subscribe", "subscription":{"name":"ticker"}, "pair":' + kraken_sym + '}')
+                i = j + 1
+                j = i + 20
+
+            # kraken_sym = str(['"{}"'.format(t) for t in self.a_kraken.markets]).replace("'", "")
+            # kraken_msg = '{"event":"subscribe", "subscription":{"name":"ticker"}, "pair":' + str(kraken_sym) + '}'
+
+            websocket = await websockets.connect("wss://ws.kraken.com/")
+            # print('kraken', websocket)
+            for msg in kraken_msg:
+                # print(msg)
+                test = await websocket.send(msg)
+            # test = await websocket.send(kraken_msg)
+            #     print('kraken test', test)
+            try:
+                while self.running:
+                    # listener loop
+                    try:
+                        message = await websocket.recv()
+                        try:
+                            message = json.loads(message)
+                            if isinstance(message, list):
+                                self.a_kraken.prices[message[3].replace('/', '').replace('XBT', 'BTC')] = message[1]['c'][0]
+                                # print(self.a_kraken.prices)
+                            # print('kraken', message)
+                        except Exception as e:
+                            await self.my_msg('Kraken Websocket Error: ' + str(e), False, False)
+                    except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosed) as e:
+                        await self.my_msg('Kraken Websocket Secondary Error: ' + str(e), False, False)
+                        await asyncio.sleep(1)
+                        break  # inner loop
+
+                    if not self.a_kraken.socket_connected:
+                        self.a_kraken.socket_connected = True
+            except ConnectionRefusedError as e:
+                # log something else
+                await self.my_msg('Kraken Connection Refused: ' + str(e), True, False)
+            await asyncio.sleep(5)
+        except Exception as e:
+            await self.my_msg('Kraken Websocket Tertiary Error: ' + str(e), True, False)
+            await asyncio.sleep(5)
+
+
+
