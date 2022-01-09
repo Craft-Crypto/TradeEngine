@@ -312,10 +312,9 @@ class TradeEngine(object):
 
     async def a_debit_exchange(self, exchange, deduct):
         if exchange.rate_limit < deduct:
-            await asyncio.sleep(2)
+            await asyncio.sleep(1)
             await self.a_debit_exchange(exchange, deduct)
         else:
-            print('deducted')
             exchange.rate_limit -= deduct
 
     async def refresh_api(self):
@@ -444,21 +443,50 @@ class TradeEngine(object):
 
                 # Now update all the cards
 
-
                 # Update Coin Cards
                 try:
                     for card in self.bb_cards + self.ab_cards:
                         if card.exchange == exchange:
-                            if card.coin in ex.bal:
-                                card.coin_bal = str(ex.bal[card.coin])
+                            if card.coin in ex.balance:
+                                card.coin_bal = str(ex.balance[card.coin])
                             else:
                                 card.coin_bal = '0'
-                            if card.pair in ex.bal:
-                                card.pair_bal = str(ex.bal[card.pair])
+                            if card.pair in ex.balance:
+                                card.pair_bal = str(ex.balance[card.pair])
                             else:
                                 card.pair_bal = '0'
                 except Exception as e:
+                    print(e)
                     await self.my_msg('Error in updating card balances', False, True)
+
+    async def collect_balance(self):
+        await self.gather_update_bals()
+        await self.my_msg('*******', False, True)
+        if len(self.a_binance.balance) > 3:
+            msg = 'Binance Balance:'
+            for bal in self.a_binance.balance:
+                msg += '\n' + bal + ': ' + str(self.a_binance.balance[bal])
+            await self.my_msg(msg, False, True)
+        if len(self.a_binanceUS.balance) > 3:
+            msg = 'Binance US Balance:'
+            for bal in self.a_binanceUS.balance:
+                msg += '\n' + bal + ': ' + str(self.a_binanceUS.balance[bal])
+            await self.my_msg(msg, False, True)
+        if len(self.a_cbp.balance) > 3:
+            msg = 'Coinbase Pro Balance:'
+            for bal in self.a_cbp.balance:
+                msg += '\n' + bal + ': ' + str(self.a_cbp.balance[bal])
+            await self.my_msg(msg, False, True)
+        if len(self.a_ftx.balance) > 3:
+            msg = 'FTX Balance:'
+            for bal in self.a_ftx.balance:
+                msg += '\n' + bal + ': ' + str(self.a_ftx.balance[bal])
+            await self.my_msg(msg, False, True)
+        if len(self.a_kraken.balance) > 3:
+            msg = 'Kraken Balance:'
+            for bal in self.a_kraken.balance:
+                msg += '\n' + bal + ': ' + str(self.a_kraken.balance[bal])
+            await self.my_msg(msg, False, True)
 
     async def check_prices_sells(self):
         while self.running:

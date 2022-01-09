@@ -39,29 +39,31 @@ if __name__ == "__main__":
         print('Welcome to TradeCraft Lite v' + tcl_version)
         print('Checking for updates...')
 
-        app_update = check_for_update()
-        if isinstance(app_update, pyupdater.client.updates.AppUpdate):  # AppUpdate, LibUpdate
-            print('Update Found. Download and restart?')
-            msg = input('Enter \'yes\' to update:')
-            if msg.strip().upper() == 'YES':
-                data = app_update.download(background=True)
-                while not app_update.is_downloaded():
-                    time.sleep(.25)
-                data.extract_restart()
-        else:
-            TE = TradeEngine()
-            TE.run()
+        # uncomment this for automatic updates on packaged versions
+        # app_update = check_for_update()
+        # if isinstance(app_update, pyupdater.client.updates.AppUpdate):  # AppUpdate, LibUpdate
+        #     print('Update Found. Download and restart?')
+        #     msg = input('Enter \'yes\' to update:')
+        #     if msg.strip().upper() == 'YES':
+        #         data = app_update.download(background=True)
+        #         while not app_update.is_downloaded():
+        #             time.sleep(.25)
+        #         data.extract_restart()
+        # else:
+        # Need to indent this for packaged version
+        TE = TradeEngine()
+        TE.run()
 
-            store = get_store('Log')
-            log = []
-            add_line = False
-            smaller = []
-            msg = ''
-            for m in TE.msgs:
-                msg += m['text'] + '\n'
+        store = get_store('Log')
+        log = []
+        add_line = False
+        smaller = []
+        msg = ''
+        for m in TE.msgs:
+            msg += m['text'] + '\n'
 
-            store[time.strftime('%I:%M:%S %p %m/%d/%y')] = msg
-            save_store('Log', store)
+        store[time.strftime('%I:%M:%S %p %m/%d/%y')] = msg
+        save_store('Log', store)
 
     except Exception as e:
         if not str(e) == 'Exit':

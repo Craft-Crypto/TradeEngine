@@ -7,9 +7,7 @@ from aioconsole import ainput
 
 
 async def check_bot_cards(self, candle):
-
     bb_cards = [card for card in self.bb_cards if card.candle == candle]
-    print('starting to run', candle, len(self.bb_cards), len(bb_cards))
     tasks = []
     self.bb_active_trades = '0'
     for tc in self.bb_trades:
@@ -33,10 +31,6 @@ async def check_bot_cards(self, candle):
             tasks.append(asyncio.create_task(self.do_check_bot_cards(candle, card, self.ab_trades,
                                                                      self.ab_trade_limit, self.ab_active_trades)))
         data = await asyncio.gather(*tasks)
-#         await self.do_check_bot_cards(candle, card, self.ab_trades, self.ab_trade_limit, self.ab_active_trades)
-#
-# tasks.append(asyncio.ensure_future(self.update_bals(exchange)))
-#             data = await asyncio.gather(*tasks)
 
 
 async def do_check_bot_cards(self, candle, card, trades, trade_limit, count):
@@ -47,15 +41,15 @@ async def do_check_bot_cards(self, candle, card, trades, trade_limit, count):
             cp = coin.strip() + '/' + card.pair
             if cp in ex.symbols:
                 # needed_ohlc.append([ex, cp, card.candle, card.my_id])
-                print('starting', cp)
+                msg = 'Starting checks of ' + cp
+                await self.my_msg(msg, True, False)
                 ohlc = await self.async_get_ohlc(ex, cp, candle, 1000)
+                make_buy = False
+                make_sell = False
                 try:
-                    make_buy = False
-                    make_sell = False
                     if ohlc:
                         make_buy, make_sell, price = check_card_trade(ex, card, cp, ohlc)
                 except Exception as e:
-                    print(cp, e)
                     msg = 'Error in calculating trade data for ' + cp + ': ' + str(e)
                     await self.my_msg(msg, False, True)
                     card.active = False
@@ -68,12 +62,14 @@ async def do_check_bot_cards(self, candle, card, trades, trade_limit, count):
                             if is_float(tc.buyback_price):
                                 if float(tc.now_price) > float(tc.buyback_price):
                                     make_buy = False
-                                    print('not below bb price')
+                                    msg = 'Wanted to buy {0}, but price is not below buyback price'.format(cp)
+                                    await self.my_msg(msg, True, False)
                                 else:
                                     dca_trade = True
                             else:
                                 make_buy = False
-                                print('order already active')
+                                msg = 'Wanted to buy {0}, but there is an existing active trade'.format(cp)
+                                await self.my_msg(msg, True, False)
                             break
 
                 num_check = True
@@ -85,19 +81,20 @@ async def do_check_bot_cards(self, candle, card, trades, trade_limit, count):
 
                 if make_buy and (num_check or dca_trade):
                     if is_float(price):
-                        print('time to buy')
+                        msg = 'Making a Buy for ' + cp
+                        await self.my_msg(msg, True, False)
                         count = str(int(count) + 1)
-                        if card.kind == 'Basic Bot':
-                            await self.make_bot_buy(card, coin)
-                        else:
-                            await self.make_bot_buy(card)
-                        print('2nd count and limit', count, trade_limit)
+                        await self.make_bot_buy(card)
+
+                        # print('2nd count and limit', count, trade_limit)
                     else:
-                        print('wanted to by ', cp, ' but no price data yet')
+                        msg = 'Wanted to by ' + cp + ' but no price data yet'
+                        await self.my_msg(msg, True, False)
 
                 if make_sell:
                     # if it said make sell, I think all we do is say that it is ready, and let our checker do the rest
-                    print(card.coin, card.pair, 'ready to sell')
+                    msg = cp + ' ready to sell.'
+                    await self.my_msg(msg, True, False)
                     card.ready_sell = True
 
 
@@ -130,10 +127,8 @@ async def make_bot_buy(self, card, *args):
     # cp for advanced bot is in card. for bb it is in args
     coin = card.coin
     pair = card.pair
-    kind = 'Advanced Bot'
-    if args:
-        coin = args[0]
-        kind = 'Basic Bot'
+    kind = card.kind
+
     cp = coin + '/' + pair
     ex = self.exchange_selector(card.exchange)
     buy_amt = 0
@@ -262,8 +257,8 @@ async def add_trade_card(self, is_basic, cp, card, buy_price, buy_amount):
 
     t = Record()
     t.set_record(card.to_dict())
-    print('t', t)
-    print('c', card)
+    # print('t', t)
+    # print('c', card)
     t.coin = coin
     t.pair = pair
     t.amount = copy_prec(buy_amount, '.111111111')
@@ -336,18 +331,16 @@ async def update_card_trade_data(self, trade):
             break
 
 
-async def check_trade_sells(self, kind):
-    if kind == 'Basic Bot':
-        if not self.bb_sells_lock and self.bb_active:
-            self.bb_sells_lock = True
-            await self.do_check_trade_sells(self.bb_trades)
-            self.bb_sells_lock = False
+async def check_trade_sells(self):
+    if not self.bb_sells_lock and self.bb_active:
+        self.bb_sells_lock = True
+        await self.do_check_trade_sells(self.bb_trades)
+        self.bb_sells_lock = False
 
-    else:
-        if not self.ab_sells_lock and self.ab_active:
-            self.ab_sells_lock = True
-            await self.do_check_trade_sells(self.ab_trades)
-            self.ab_sells_lock = False
+    if not self.ab_sells_lock and self.ab_active:
+        self.ab_sells_lock = True
+        await self.do_check_trade_sells(self.ab_trades)
+        self.ab_sells_lock = False
 
 
 async def do_check_trade_sells(self, trades):
@@ -527,14 +520,13 @@ async def quick_trade(self, *args):
                 ex = 'FTX'
             elif msg == '6':
                 ex = 'Kraken'
-            msg = await ainput(">")
             try:
                 ex = self.exchange_selector(ex)
             except Exception as e:
                 await self.my_msg('Error in Exchange Selection', False, False)
                 return
 
-            await self.my_msg('\nEnter \'buy\' or \'sell\'', False, False)
+            await self.my_msg('Enter \'buy\' or \'sell\'', False, False)
             msg = await ainput(">")
             if msg.upper().strip() == 'buy':
                 kind = 'buy'
@@ -567,7 +559,7 @@ async def quick_trade(self, *args):
 
         await self.a_debit_exchange(ex, 1)
 
-        price = float(self.active_exchange.prices[cp.replace('/', '')])
+        price = float(ex.prices[cp.replace('/', '')])
 
         if not price:
             msg = 'Attempted to Quick Trade ' + cp + ' But no price has been recorded.'
@@ -575,9 +567,9 @@ async def quick_trade(self, *args):
         else:
             try:
                 if kind == 'buy':
-                    ordr = await self.active_exchange.create_market_buy_order(cp, amount)
+                    ordr = await ex.create_market_buy_order(cp, amount)
                 else:
-                    ordr = await self.active_exchange.create_market_sell_order(cp, amount)
+                    ordr = await ex.create_market_sell_order(cp, amount)
             except Exception as e:
                     msg = 'Error in Quick Trade of ' + cp + ': ' + str(e)
                     await self.my_msg(msg, False, True)
@@ -603,7 +595,7 @@ async def quick_trade(self, *args):
                     msg = 'Sold ' + str(amount) + ' ' + cp + ' at ' + str(pr) + '.'
 
                 await self.my_msg(msg, False, True)
-                await self.gather_update_bals(ex)
+                await self.gather_update_bals()
 
     except Exception as e:
         # print('sell all error', e)
