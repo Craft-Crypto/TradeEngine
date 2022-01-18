@@ -3,7 +3,7 @@ from quart import request, jsonify
 import aiohttp
 import asyncio
 import time
-
+import json
 
 engine_api = Quart(__name__)
 pfx = '/cc/api/v1'
@@ -14,7 +14,12 @@ def home():
     return 'pong'
 
 
-@engine_api.route(pfx + '/getohlc', methods=['GET'])
+@engine_api.route(pfx + '/save', methods=['GET'])
+async def save():
+    await engine_api.worker.save()
+
+
+@engine_api.route(pfx + '/get_ohlc', methods=['GET'])
 async def get_ohlc():
     test = await engine_api.worker.simple_getohlc('Binance')
     return jsonify(test)
@@ -29,53 +34,107 @@ async def get_ex_price():
     return ex.prices
 
 
-@engine_api.route(pfx + '/bbdata', methods=['POST'])
+@engine_api.route(pfx + '/bb_data', methods=['GET'])
 async def get_bb_data():
-    form = await request.form
-    ex = engine_api.worker.exchange_selector(form['ex'])
-    return ex.prices
+    data = {}
+    data['strat'] = engine_api.worker.bb_strat.to_json()
+    data['cards'] = engine_api.worker.bb_cards
+    data['trades'] = engine_api.worker.bb_trades
+    data['trade_limit'] = engine_api.worker.bb_trade_limit
+    data['active'] = engine_api.worker.bb_active
+    return jsonify(data)
 
 
-@engine_api.route(pfx + '/abdata', methods=['POST'])
+@engine_api.route(pfx + '/ab_data', methods=['GET'])
 async def get_ab_data():
-    form = await request.form
-    ex = engine_api.worker.exchange_selector(form['ex'])
-    return ex.prices
+    data = {}
+    data['cards'] = engine_api.worker.ab_cards
+    data['trades'] = engine_api.worker.ab_trades
+    data['trade_limit'] = engine_api.worker.ab_trade_limit
+    data['active'] = engine_api.worker.ab_active
+    return jsonify(data)
 
 
-async def activate_check_key(session, url, id):
-    t = time.time()
-    async with session.get(url) as resp:
-        msg = await resp.json()
-        print('call took', time.time()-t)
-        return [msg, id]
-
-
-@engine_api.route(pfx + '/cckey', methods=['POST'])
-async def get_cc_key_data():
-    form = await request.form
-    try:
-        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(verify_ssl=False)) as session:
-            product_id = ['3863', '3862', '3861', '3860', '3859', '3827']
-            tasks = []
-            for p_id in product_id:
-                endpoint = 'https://craft-crypto.com/wc/v3/?wc-api=wc-am-api'
-                first = '&wc_am_action=' + form['action']
-                second = '&api_key=' + form['key']
-                third = '&product_id=' + p_id
-                forth = '&instance=' + form['instance']
-                woo_key = '&consumer_key=123&consumer_secret=abc'
-
-                url = endpoint + first + second + third + forth + woo_key
-                print(url)
-                tasks.append(asyncio.ensure_future(activate_check_key(session, url, p_id)))
-            data = await asyncio.gather(*tasks)
-
-
-    except Exception as e:
-        print('cc api error', e)
+@engine_api.route(pfx + '/api_keys', methods=['GET'])
+async def get_api_data():
+    data = {}
+    for exchange in engine_api.worker.exchanges:
+        ex = engine_api.worker.exchange_selector(exchange)
+        data[exchange] = {}
+        # try:
+        if ex.apiKey:
+            data[exchange]['key'] = ex.apiKey
+            data[exchange]['secret'] = ex.secret
+            if exchange == 'Coinbase Pro':
+                data[exchange]['password'] = ex.password
+        else:
+            data[exchange]['key'] = ''
+            data[exchange]['secret'] = ''
+            if exchange == 'Coinbase Pro':
+                data[exchange]['password'] = ''
+        # except Exception as e:
+        #     await engine_api.worker.my_msg('Error in posting API data ' + exchange, False, False)
+        #     return str(e)
+    if engine_api.worker.tele_bot:
+        try:
+            data['tele_token'] = engine_api.worker.tele_bot.token
+            data['tele_chat'] = engine_api.worker.tele_bot.chat_id
+        except Exception as e:
+            data['tele_token'] = ''
+            data['tele_chat'] = ''
+    else:
+        data['tele_token'] = ''
+        data['tele_chat'] = ''
+        
 
     return jsonify(data)
+
+
+@engine_api.route(pfx + '/set_api_keys', methods=['POST'])
+async def set_api_data():
+    import ast
+    form = await request.form
+    data = ast.literal_eval(form['data'])
+    for dd in data:
+        ex = engine_api.worker.exchange_selector(dd)
+        # try:
+        print(data, dd)
+        print(data[dd])
+        ex.apiKey = data[dd]['key'] 
+        ex.secret = data[dd]['secret'] 
+        if dd == 'Coinbase Pro':
+                ex.password = data[dd]['password'] 
+        
+        # except Exception as e:
+        #     await engine_api.worker.my_msg('Error in posting API data ' + exchange, False, False)
+        #     return str(e)
+    
+    # # I need to put something in here that updates the tele bot
+    # if engine_api.worker.tele_bot:
+    #     try:
+    #         data['tele_token'] = engine_api.worker.tele_bot.token
+    #         data['tele_chat'] = engine_api.worker.tele_bot.chat_id
+    #     except Exception as e:
+    #         data['tele_token'] = ''
+    #         data['tele_chat'] = ''
+    # else:
+    #     data['tele_token'] = ''
+    #     data['tele_chat'] = ''
+
+    return jsonify(data)
+
+
+@engine_api.route(pfx + '/msgs', methods=['GET'])
+async def get_msgs():
+    msg = []
+    while not engine_api.worker.msg_q.empty():
+        msg.append(engine_api.worker.msg_q.get())
+    return jsonify(msg)
+    
+
+#make message
+
+#reload api keys from file
 
 
 #     elif msg[0] == 'check_key':

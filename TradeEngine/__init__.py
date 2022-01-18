@@ -2,6 +2,7 @@ import asyncio
 import traceback
 import sys
 import time
+import queue
 from record import Record
 from aioconsole import ainput
 from helper_functions import is_float, save_store, copy_prec
@@ -58,7 +59,8 @@ class TradeEngine(object):
         self.sell_mod = 1
         self.loop = None
         self.running = False
-        self.msgs = []
+        self.log_msgs = []
+        self.msg_q = queue.Queue()
         self.tele_bot = None
         self.q = asyncio.queues.Queue()
         self.looking = False  # Input Management
@@ -102,10 +104,12 @@ class TradeEngine(object):
     async def my_msg(self, text, verbose, tele, *args):
         if verbose and self.verbose:
             print(text)
+            self.msg_q.put(text)
         if not verbose:
             print(text)
+            self.msg_q.put(text)
 
-        if tele:
+        if tele and self.tele_bot:
             if self.tele_bot.chat_id:
                 try:
                     await self.tele_bot.send_message(chat_id=self.tele_bot.chat_id, text=text)
@@ -114,7 +118,7 @@ class TradeEngine(object):
                     await self.my_msg(msg, False, False)
 
         tim = time.strftime('%I:%M:%S %p %m/%d/%y')
-        self.msgs.append((tim + ': ' + text))
+        self.log_msgs.append((tim + ': ' + text))
 
     async def set_bb_strat(self):
         await self.my_msg('*******', False, False)

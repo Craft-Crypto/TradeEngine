@@ -171,7 +171,7 @@ async def initialize(self):
     await self.my_msg('Setting Up Trade Server...', False, False)
     await asyncio.sleep(.5)
     config = Config()
-    config.bind = ["localhost:8080"]  # As an exa
+    config.bind = ["0.0.0.0:8080"]  # As an exa
     self.trade_server = engine_api
     self.trade_server.worker = self
     asyncio.ensure_future(serve(self.trade_server, config))
@@ -268,6 +268,4 @@ async def test_apis(self, *args):
         else:
             msg = 'No keys found for ' + ex
             await self.my_msg(msg, False, False)
-
-
     return need_keys

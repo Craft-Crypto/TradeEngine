@@ -133,98 +133,69 @@ class Record:
 
     def set_record(self, rec):
         for key in rec:
-            setattr(self, key, rec[key])
+            try:
+                setattr(self, key, rec[key])
+            except Exception as e:
+                print('Error setting', key, e)
 
 
-    # # Not Sure if we will need these
-    # close_diff_val
-    # sellover
+def convert_record(old_rec):
+    # This converts the old style records into new records.
+    '''
+    class Record(EventDispatcher):
+        def __init__(self, **kwargs):
+            self.trigs = ['ema', 'ema_buy', 'ema_sell', 'ema_cross_fast', 'ema_cross_slow', 'ema_cross_buy',
+                          'ema_cross_sell', 'sma', 'sma_buy', 'ema_percent', 'sma_percent',
+                          'sma_sell', 'sma_cross_fast', 'sma_cross_slow', 'sma_cross_buy', 'sma_cross_sell',
+                          'ema_sma_cross_fast', 'ema_sma_cross_slow', 'ema_sma_cross_buy',
+                          'ema_sma_cross_sell', 'rsi_buy', 'rsi_sell', 'bb_buy', 'bb_sell', 'macd_cross_buy',
+                          'macd_cross_sell', 'macd_0_buy', 'macd_0_sell', 'macd_color_buy', 'macd_color_sell',
+                          'stoch_cross_buy', 'stoch_cross_sell', 'stoch_val_buy', 'stoch_val_sell', 'psar_cross_buy',
+                          'psar_cross_sell',
+                          'sell_per', 'stop_per', 'trail_per', 'dca_buyback_per',
+                          ]
 
-    # # Legacy?
-    # def set_record(self, rec, *args):
-    #     for key in rec:
-    #         if args:
-    #
-    #         elif not key == 'active':
-    #             setattr(self, key, rec[key])
-    #
-    # def get_record(self):
-    #     new_rec = {}
-    #     for key in self.base:
-    #         if not getattr(self, key) == '':
-    #             new_rec[key] = getattr(self, key)
-    #     for key in self.trigs:
-    #         if not getattr(self, key) == '':
-    #             new_rec[key] = getattr(self, key)
-    #     for key in self.trade_data:
-    #         if not getattr(self, key) == '':
-    #             new_rec[key] = getattr(self, key)
-    #     for key in self.trues:
-    #         if not getattr(self, key) == '':
-    #             new_rec[key] = getattr(self, key)
-    #     if getattr(self, 'childs'):
-    #         new_rec['childs'] = getattr(self, 'childs')
-    #     return new_rec
-    #
-    # def get_all(self):
-    #     new_rec = {}
-    #     for key in self.base:
-    #         new_rec[key] = getattr(self, key)
-    #     for key in self.trigs:
-    #         new_rec[key] = getattr(self, key)
-    #     for key in self.trues:
-    #         new_rec[key] = getattr(self, key)
-    #     for key in self.trade_data:
-    #         new_rec[key] = getattr(self, key)
-    #     # if getattr(self, 'childs'):
-    #     new_rec['childs'] = getattr(self, 'childs')
-    #     return new_rec
-    #
-    # def get_base(self):
-    #     new_rec = {}
-    #     for key in self.base:
-    #         if not getattr(self, key) == '':
-    #             new_rec[key] = getattr(self, key)
-    #     return new_rec
-    #
-    # def get_trigs(self):
-    #     new_rec = {}
-    #     for key in self.trigs:
-    #         if not getattr(self, key) == '':
-    #             new_rec[key] = getattr(self, key)
-    #     return new_rec
-    #
-    # def reset(self, *args):
-    #     my_id = self.my_id
-    #     for key in self.base + self.trigs + self.trade_data:
-    #         if key not in args:
-    #             setattr(self, key, '')
-    #
-    #     self.my_id = my_id
-    #     self.gl_per = '0'
-    #     self.buy_price = '0'
-    #     self.price = '0'
-    #     self.sold_price = '0'
-    #     self.sell_price = '0'
-    #     self.buy_price = '0'
-    #     self.now_price = '0'
-    #     self.average_buy = '0'
-    #     self.buyback_price = '0'
-    #     self.trail_price = '0'
-    #     self.stop_price = '0'
-    #     self.coin_min = '0'
-    #     self.pair_min = '0'
-    #     self.prec = '.11111111'
-    #     self.exchange = 'Binance'
-    #     self.ex_icon = 'Binance_icon.png'
-    #
-    #     self.active = True
-    #
-    #     self.num_sells = '0'
-    #     self.sell_vol = '0'
-    #     self.num_buys = '0'
-    #     self.buy_vol = '0'
-    #     self.leverage = '0'
+            self.base = ['symbol', 'coin', 'pair', 'nope_coin', 'candle', 'pair_per', 'pair_amt', 'pair_minmult',
+                         'exchange', 'ex_icon', 'my_id', 'coin_min', 'pair_min', 'kind', 'side', 'leverage',
+                         'trade_id', 'buy_trade_id', 'sell_trade_id', 'check_rate']
+
+            self.trade_data = ['gl_per', 'ema_val', 'ema_cross_val_fast', 'ema_cross_val_slow', 'sma_val',
+                               'sma_cross_val_fast',
+                               'sma_cross_val_slow', 'ema_sma_cross_val_fast', 'ema_sma_cross_val_slow', 'rsi_val',
+                               'bb_width_val', 'bb_under_val', 'bb_over_val', 'close_diff_val', 'macd_val',
+                               'macd_signal_val',
+                               'k_val', 'd_val', 'psar_val', 'sellover', 'status', 'enable_buy', 'error',
+                               'last_update', 'trade_vol', 'prec', 'sell_price', 'buy_price', 'stop_price',
+                               'trail_price',
+                               'buy_price', 'sold_price', 'amount', 'now_price', 'coin_bal', 'pair_bal', 'average_buys',
+                               'average_sells', 'dca', 'buyback_price', 'last_price', 'last_buy_price', 'indicators',
+                               'trade_vol', 'trade_price', 'per_gain', 'num_trades', 'num_buys', 'num_sells', 'buy_vol',
+                               'sell_vol', 'price'
+                               ]
+
+            self.create_property('childs', value=[])
+
+            self.trues = ['active', 'ready_sell', 'sold', 'selected', 'sell_now', 'buy_now', 'verified', 'very_sent',
+                          'is_stop', 'buy_enabled', 'sell_enabled']
+
+            for key in self.base:
+                self.create_property(key, value='')
+
+            for key in self.trigs:
+                self.create_property(key, value='')
+
+            for key in self.trade_data:
+                self.create_property(key, value='')
+
+            for key in self.trues:
+                self.create_property(key, value=False)
+
+
+    trouble ones: Yes/No to True/False
+     'ema_buy', 'ema_sell'
+    '''
+    pass
+
 
 
 if __name__ == '__main__':
