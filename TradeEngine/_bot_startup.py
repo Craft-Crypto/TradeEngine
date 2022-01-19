@@ -9,7 +9,7 @@ from hypercorn.config import Config
 from helper_functions import get_store
 from TradeEngine._tele_api_calls import TeleBot
 from TradeEngine._trade_api_calls import engine_api
-from record import Record
+from record import Record, convert_record
 
 
 async def initialize(self):
@@ -80,26 +80,34 @@ async def initialize(self):
         # await self.q.put('set tele keys')
 
     await self.my_msg('Loading Saved Trades...', False, False)
-    store = get_store('BasicBot')
-    if store:
-        try:
-            self.bb_strat.set_record(store['bb_strat'])
-            for cc in store['bb_cards']:
-                rec = Record()
-                rec.set_record(cc)
-                self.bb_cards.append(rec)
-            for tc in store['bb_trades']:
-                rec = Record()
-                rec.set_record(tc)
-                self.bb_trades.append(rec)
-            self.bb_trade_limit = store['bb_trade_limit']
-            await self.my_msg('Found Basic Bot Trades:', False, False)
-        except Exception as e:
-            await self.my_msg('Error loading Basic Bot Trades', False, False)
 
+    # Check for Legacy
+    store = get_store('LiteBot')
+    if store:
+        for cc in store['trades']:
+            new_rec = convert_record(cc)
+            self.bb_trades.append(new_rec)
     else:
-        await self.my_msg('No Saved Basic Bot Trades Found.', False, False)
-        # await self.q.put('set strat')
+        store = get_store('BasicBot')
+        if store:
+            try:
+                self.bb_strat.set_record(store['bb_strat'])
+                for cc in store['bb_cards']:
+                    rec = Record()
+                    rec.set_record(cc)
+                    self.bb_cards.append(rec)
+                for tc in store['bb_trades']:
+                    rec = Record()
+                    rec.set_record(tc)
+                    self.bb_trades.append(rec)
+                self.bb_trade_limit = store['bb_trade_limit']
+                await self.my_msg('Found Basic Bot Trades:', False, False)
+            except Exception as e:
+                await self.my_msg('Error loading Basic Bot Trades', False, False)
+
+        else:
+            await self.my_msg('No Saved Basic Bot Trades Found.', False, False)
+            # await self.q.put('set strat')
 
     store = get_store('AdvancedBot')
     if store:

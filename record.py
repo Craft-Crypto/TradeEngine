@@ -191,11 +191,33 @@ def convert_record(old_rec):
                 self.create_property(key, value=False)
 
 
-    trouble ones: Yes/No to True/False
-     'ema_buy', 'ema_sell'
     '''
-    pass
+    new_rec = Record()
+    for dd in old_rec:
+        if dd in ['ema_buy', 'ema_sell', 'sma_buy', 'sma_sell', 'ema_cross_buy', 'ema_cross_sell', 'sma_cross_buy',
+                  'sma_cross_sell', 'ema_sma_cross_buy', 'ema_sma_cross_sell']:
+            if old_rec[dd] == 'Yes':
+                setattr(new_rec, dd, True)
+            else:
+                setattr(new_rec, dd, False)
+        elif dd == 'prec':
+            setattr(new_rec, 'precision', old_rec[dd])
+        elif dd == 'coin_min':
+            setattr(new_rec, 'coin_min_trade', old_rec[dd])
+        elif dd == 'pair_min':
+            setattr(new_rec, 'cost_min_trade', old_rec[dd])
+        elif dd == 'sell_per':
+            setattr(new_rec, 'take_profit_per', old_rec[dd])
+        elif dd == 'sell_price':
+            setattr(new_rec, 'take_profit_price', old_rec[dd])
+        elif dd == 'buyback_price':
+            setattr(new_rec, 'dca_buyback_price', old_rec[dd])
+        elif dd == 'childs':
+            setattr(new_rec, 'children', old_rec[dd])
+        else:
+            setattr(new_rec, dd, old_rec[dd])
 
+    return new_rec
 
 
 if __name__ == '__main__':

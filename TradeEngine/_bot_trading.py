@@ -11,7 +11,7 @@ async def check_bot_cards(self, candle):
     tasks = []
     self.bb_active_trades = '0'
     for tc in self.bb_trades:
-        if not tc['sold']:
+        if not tc.sold:
             self.bb_active_trades = str(int(self.bb_active_trades) + 1)
 
     if self.bb_active and bb_cards:
@@ -23,7 +23,7 @@ async def check_bot_cards(self, candle):
     tasks = []
     self.ab_active_trades = '0'
     for tc in self.ab_trades:
-        if not tc['sold']:
+        if not tc.sold:
             self.ab_active_trades = str(int(self.ab_active_trades) + 1)
     ab_cards = [card for card in self.ab_cards if card.candle == candle]
     if self.ab_active and ab_cards:

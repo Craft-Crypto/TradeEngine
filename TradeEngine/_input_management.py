@@ -118,18 +118,17 @@ async def manage_input(self, msg):
 
         if trades:
             for tr in trades:
-                msg = tr['coin'] + '/' + tr['pair'] + '  ' + tr['gl_per'] + '%'
-                if tr['sold']:
+                msg = tr.coin + '/' + tr.pair + '  ' + tr.gl_per + '%'
+                if tr.sold:
                     msg += ' - Sold'
-                if len(tr['childs']) > 1:
+                if len(tr.children) > 1:
                     msg += '\n- DCA Buys:'
-                    for child in tr['childs']:
-                        gl = float(tr['now_price']) / float(child['buy_price']) * 100 - 100
-                        # print(tc['coin'], tc['pair'], tc['now_price'], tc['buy_price'], tc['gl_per'])
+                    for child in tr.children:
+                        gl = float(tr.now_price) / float(child['buy_price']) * 100 - 100
+                        # print(tc.coin, tc.pair, tc.now_price, tc.buy_price, tc.gl_per)
                         child_gl = str(round(gl, 2))
-                        msg += '\n-- ' + child['amount'] + ' at ' + child['buy_price'] + '  ' + str(
-                            child_gl) + '%'
-                msg += '\n- Last Updated: ' + tr['last_update']
+                        msg += '\n-- {0} at {1} {2}%'.format(child['amount'], child['buy_price'], str(child_gl))
+                msg += '\n- Last Updated: ' + tr.last_update
                 await self.my_msg(msg, False, True)
         else:
             await self.my_msg('No trades found. Use \'activate bb\' or \'activate ab\' to begin trading.', False, True)
@@ -144,31 +143,30 @@ async def manage_input(self, msg):
             trades = self.ab_trades
         if trades:
             for tr in self.bb_trades:
-                msg = tr['coin'] + '/' + tr['pair'] + '  ' + tr['gl_per'] + '%'
-                if tr['sold']:
+                msg = tr.coin + '/' + tr.pair + '  ' + tr.gl_per + '%'
+                if tr.sold:
                     msg += ' - Sold'
                 # await self.my_msg(msg, False, True)
-                if len(tr['childs']) > 1:
+                if len(tr.children) > 1:
                     msg += '\n- DCA Buys:'
-                    for child in tr['childs']:
-                        gl = float(tr['now_price']) / float(child['buy_price']) * 100 - 100
-                        # print(tc['coin'], tc['pair'], tc['now_price'], tc['buy_price'], tc['gl_per'])
+                    for child in tr.children:
+                        gl = float(tr.now_price) / float(child['buy_price']) * 100 - 100
+                        # print(tc.coin, tc.pair, tc.now_price, tc.buy_price, tc.gl_per)
                         child_gl = str(round(gl, 2))
-                        msg += '\n-- ' + child['amount'] + ' at ' + child['buy_price'] + '  ' + str(
-                            child_gl) + '%'
+                        msg += '\n-- {0} at {1} {2}%'.format(child['amount'], child['buy_price'], str(child_gl))
                 else:
-                    msg += '\n- Amount: ' + tr['amount']
-                    msg += '\n- Buy Price: ' + tr['buy_price']
-                if tr['sold']:
-                    msg += '\n- Sold Price: ' + tr['sold_price']
+                    msg += '\n- Amount: ' + tr.amount
+                    msg += '\n- Buy Price: ' + tr.buy_price
+                if tr.sold:
+                    msg += '\n- Sold Price: ' + tr.sold_price
                 else:
-                    msg += '\n- Current Price: ' + tr['now_price']
-                msg += '\n- Take Profit: ' + tr['sell_price'] + ' (' + tr['sell_per'] + '%)'
-                msg += '\n- Average Buy Price: ' + tr['buy_price']
-                msg += '\n- DCA Price: ' + tr['buyback_price'] + ' (-' + tr['dca_buyback_per'] + '%)'
-                msg += '\n- Stop Loss: ' + tr['stop_price'] + ' (-' + tr['stop_per'] + '%)'
-                msg += '\n- Trail Price: ' + tr['trail_price'] + ' (' + tr['trail_per'] + '%)'
-                msg += '\n- Last Updated: ' + tr['last_update']
+                    msg += '\n- Current Price: ' + tr.now_price
+                msg += '\n- Take Profit: ' + tr.sell_price + ' (' + tr.sell_per + '%)'
+                msg += '\n- Average Buy Price: ' + tr.buy_price
+                msg += '\n- DCA Price: ' + tr.buyback_price + ' (-' + tr.dca_buyback_per + '%)'
+                msg += '\n- Stop Loss: ' + tr.stop_price + ' (-' + tr.stop_per + '%)'
+                msg += '\n- Trail Price: ' + tr.trail_price + ' (' + tr.trail_per + '%)'
+                msg += '\n- Last Updated: ' + tr.last_update
                 await self.my_msg(msg, False, True)
         else:
             await self.my_msg('No trades found. Use \'activate bb\' or \'activate ab\' to begin trading.', False, True)
