@@ -11,6 +11,7 @@ import getpass
 import CraftCrypto_Helpers
 CraftCrypto_Helpers.Helpers.dir_path = '/Users/' + getpass.getuser() + '/Documents/Craft-Crypto/TradeEngine/'
 
+
 class TradeEngine(object):
     from ._ex_websockets import websocket_bin, websocket_binUS, websocket_bm
     from ._ex_websockets import websocket_cbp, websocket_ftx, websocket_kraken
@@ -257,8 +258,6 @@ class TradeEngine(object):
             self.bb_cards.append(rec)
 
         return True
-
-
 
     async def set_api_keys(self):
         await self.my_msg('*******', False, False)

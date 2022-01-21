@@ -34,6 +34,15 @@ async def get_ex_price():
     return ex.prices
 
 
+@engine_api.route(pfx + '/all_prices', methods=['GET'])
+async def get_all_prices():
+    data = {}
+    for exchange in engine_api.worker.exchanges:
+        ex = engine_api.worker.exchange_selector(exchange)
+        data[exchange] = ex.prices
+    return data
+
+
 @engine_api.route(pfx + '/bb_data', methods=['GET'])
 async def get_bb_data():
     data = {}

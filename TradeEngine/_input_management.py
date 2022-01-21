@@ -2,6 +2,7 @@ from aioconsole import ainput
 from TradeEngine._tele_api_calls import TeleBot
 from CraftCrypto_Helpers.Helpers import file_path, is_float, copy_prec
 
+
 async def manage_input(self, msg):
     if msg.lower() == 'setup':
         await self.my_msg('Setup Exchange API Keys? (Y/n)', False, False)
