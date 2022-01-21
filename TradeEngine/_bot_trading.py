@@ -1,8 +1,8 @@
-from helper_functions import is_float, copy_prec
+from CraftCrypto_Helpers.Helpers import is_float, copy_prec
 import time
 import asyncio
 from MarketMath import calculate_market_indicators, determine_buy_sell
-from record import Record
+from CraftCrypto_Helpers.BaseRecord import BaseRecord
 from aioconsole import ainput
 
 
@@ -255,7 +255,7 @@ async def add_trade_card(self, is_basic, cp, card, buy_price, buy_amount):
                 await self.cal_average_buys()
                 return
 
-    t = Record()
+    t = BaseRecord()
     t.set_record(card.to_dict())
     # print('t', t)
     # print('c', card)

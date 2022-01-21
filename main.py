@@ -1,10 +1,13 @@
+import CraftCrypto_Helpers.Helpers
 import pyupdater
 from pyupdater.client import Client as updateClient
 import traceback
 from client_config import ClientConfig
 from TradeEngine import TradeEngine
-from helper_functions import get_store, save_store
+from CraftCrypto_Helpers.Helpers import get_store, save_store
 import time
+import getpass
+
 
 # Starts everything off
 def check_for_update():

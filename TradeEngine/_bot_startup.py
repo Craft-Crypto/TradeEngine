@@ -6,10 +6,10 @@ import time
 import ccxt.async_support as a_ccxt
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
-from helper_functions import get_store
+from CraftCrypto_Helpers.Helpers import get_store
 from TradeEngine._tele_api_calls import TeleBot
 from TradeEngine._trade_api_calls import engine_api
-from record import Record, convert_record
+from CraftCrypto_Helpers.BaseRecord import BaseRecord, convert_record
 
 
 async def initialize(self):
@@ -93,16 +93,17 @@ async def initialize(self):
             try:
                 self.bb_strat.set_record(store['bb_strat'])
                 for cc in store['bb_cards']:
-                    rec = Record()
+                    rec = BaseRecord()
                     rec.set_record(cc)
                     self.bb_cards.append(rec)
                 for tc in store['bb_trades']:
-                    rec = Record()
+                    rec = BaseRecord()
                     rec.set_record(tc)
                     self.bb_trades.append(rec)
                 self.bb_trade_limit = store['bb_trade_limit']
                 await self.my_msg('Found Basic Bot Trades:', False, False)
             except Exception as e:
+                print(e)
                 await self.my_msg('Error loading Basic Bot Trades', False, False)
 
         else:
@@ -113,11 +114,11 @@ async def initialize(self):
     if store:
         try:
             for cc in store['ab_cards']:
-                rec = Record()
+                rec = BaseRecord()
                 rec.set_record(cc)
                 self.ab_cards.append(rec)
             for tc in store['ab_trades']:
-                rec = Record()
+                rec = BaseRecord()
                 rec.set_record(tc)
                 self.ab_trades.append(rec)
             self.ab_trade_limit = store['ab_trade_limit']

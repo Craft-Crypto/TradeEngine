@@ -1,6 +1,6 @@
 from aioconsole import ainput
 from TradeEngine._tele_api_calls import TeleBot
-from helper_functions import file_path, is_float, copy_prec
+from CraftCrypto_Helpers.Helpers import file_path, is_float, copy_prec
 
 async def manage_input(self, msg):
     if msg.lower() == 'setup':
@@ -121,9 +121,9 @@ async def manage_input(self, msg):
                 msg = tr.coin + '/' + tr.pair + '  ' + tr.gl_per + '%'
                 if tr.sold:
                     msg += ' - Sold'
-                if len(tr.children) > 1:
+                if len(tr.childs) > 1:
                     msg += '\n- DCA Buys:'
-                    for child in tr.children:
+                    for child in tr.childs:
                         gl = float(tr.now_price) / float(child['buy_price']) * 100 - 100
                         # print(tc.coin, tc.pair, tc.now_price, tc.buy_price, tc.gl_per)
                         child_gl = str(round(gl, 2))
@@ -147,9 +147,9 @@ async def manage_input(self, msg):
                 if tr.sold:
                     msg += ' - Sold'
                 # await self.my_msg(msg, False, True)
-                if len(tr.children) > 1:
+                if len(tr.childs) > 1:
                     msg += '\n- DCA Buys:'
-                    for child in tr.children:
+                    for child in tr.childs:
                         gl = float(tr.now_price) / float(child['buy_price']) * 100 - 100
                         # print(tc.coin, tc.pair, tc.now_price, tc.buy_price, tc.gl_per)
                         child_gl = str(round(gl, 2))

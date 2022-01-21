@@ -1,6 +1,6 @@
 from statistics import stdev
-from helper_functions import is_float, copy_prec
-
+from CraftCrypto_Helpers.Helpers import is_float, copy_prec
+# This might get ported to Craft-Crypto Helpers too
 
 def calculate_market_indicators(closes, ohlc, card):
     my_ema = EMA(closes, int(card.ema)) if is_float(card.ema) else None

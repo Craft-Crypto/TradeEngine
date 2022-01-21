@@ -3,11 +3,13 @@ import traceback
 import sys
 import time
 import queue
-from record import Record
+from CraftCrypto_Helpers.BaseRecord import BaseRecord
 from aioconsole import ainput
-from helper_functions import is_float, save_store, copy_prec
+from CraftCrypto_Helpers.Helpers import is_float, save_store, copy_prec
 from TradeEngine._tele_api_calls import TeleBot
-
+import getpass
+import CraftCrypto_Helpers
+CraftCrypto_Helpers.Helpers.dir_path = '/Users/' + getpass.getuser() + '/Documents/Craft-Crypto/TradeEngine/'
 
 class TradeEngine(object):
     from ._ex_websockets import websocket_bin, websocket_binUS, websocket_bm
@@ -36,7 +38,7 @@ class TradeEngine(object):
         self.a_ftx = None
 
         # Setup Basic Bot
-        self.bb_strat = Record()
+        self.bb_strat = BaseRecord()
         self.bb_cards = []
         self.bb_trades = []
         self.bb_active_trades = '0'
