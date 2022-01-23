@@ -5,7 +5,7 @@ import time
 import queue
 from CraftCrypto_Helpers.BaseRecord import BaseRecord
 from aioconsole import ainput
-from CraftCrypto_Helpers.Helpers import is_float, save_store, copy_prec
+from CraftCrypto_Helpers.Helpers import is_float, save_store, copy_prec, get_store
 from TradeEngine._tele_api_calls import TeleBot
 import getpass
 import CraftCrypto_Helpers
@@ -148,35 +148,36 @@ class TradeEngine(object):
             ex = 'Kraken'
 
         await self.my_msg('Select a Strategy for the Bot:', False, False)
-        await self.my_msg('1 - RSI DCA Minute Trading', False, False)
-        await self.my_msg('-- This strategy uses 1 minute candles and the Relative Strength Index to '
-                          'initiate buys. It then looks for quick profit opportunities, and chances to '
-                          'Down Cost Average on the dips.', False, False)
-        await self.my_msg('2 - MACD Stoch Long Haul', False, False)
-        await self.my_msg('-- A '
-                          'egy that works on the 4 hour candle, but tends to find just the '
-                          'perfect time to buy. The Long Haul waits to buy when the MACD to cross up and '
-                          'be in the red, with a Stoch under 30, and steps a moderate take profit, stop '
-                          'loss, and trail.', False, False)
-        await self.my_msg('3 - Cross and Pop', False, False)
-        await self.my_msg('-- Combining Simple Moving Average Crosses with Trailing Stop Losses and '
-                          'Down Cost Averaging is a great way to earning profit off a volatile market in '
-                          'the 5 minute candle.', False, False)
-        msg = await ainput(">")
-        name = ''
-        if msg == '1':
-            name = 'RSI DCA Minute Trading'
-        elif msg == '2':
-            name = 'MACD Stoch Long Haul'
-        elif msg == '3':
-            name = 'Cross and Pop'
+        store = get_store('BasicStrats')
+        if store:
+            for strat_num in store:
+                await self.my_msg(strat_num + ' - ' + store[strat_num]['title'], False, False)
+                await self.my_msg('-- ' + store[strat_num]['description'], False, False)
+        else:
+            await self.my_msg('Error with Strategy Store. Please restart to remake:', False, False)
+
+        strat_index = await ainput(">")
+        # name = ''
+        # if msg == '1':
+        #     name = 'RSI DCA Minute Trading'
+        # elif msg == '2':
+        #     name = 'MACD Stoch Long Haul'
+        # elif msg == '3':
+        #     name = 'Cross and Pop'
 
         pair = ''
         await self.my_msg('Select a Trading Pair:', False, False)
         msg = await ainput(">")
         pair = msg.upper()
 
-        worked = await self.update_strat(ex, name, pair)
+        await self.my_msg('Filter Out Stable Coins? (Y/n):', False, False)
+        msg = await ainput(">")
+        if msg.lower() == 'n':
+            filter_stable = False
+        else:
+            filter_stable = True
+
+        worked = await self.update_strat(ex, strat_index, pair, filter_stable)
 
         if worked:
             # Need to filter out stable coin/stable coin
@@ -194,19 +195,22 @@ class TradeEngine(object):
         if is_float(msg):
             self.bb_trade_limit = msg
 
-
-
         await self.save()
 
-    async def update_strat(self, exchange, name, pair, *args):
-        if not exchange and name and pair:
+    async def update_strat(self, exchange, strat_index, pair, filter_stable, *args):
+        if not exchange and strat_index and pair:
             msg = 'Invalid Strategy Settings'
             await self.my_msg(msg, False, True)
             return False
 
-        self.bb_strat = Record()
+        self.bb_strat = BaseRecord()
         strat = self.bb_strat
-        strat.kind = name
+        store = get_store('BasicStrats')
+        if store:
+            strat.set_record(store[strat_index])
+        else:
+            await self.my_msg('Another Error with Strategy Store. Please restart to remake:', False, False)
+
         strat.pair = pair
         strat.exchange = exchange
 
@@ -214,43 +218,48 @@ class TradeEngine(object):
         ex = self.exchange_selector(self.bb_strat.exchange)
         await ex.load_markets()
         self.bb_strat.coin = ''
+        stable_coins = ['USDT', 'USDC', 'BUSD', 'UST', 'DAI', 'TUSD', 'USDP', 'USDN', 'FEI', 'GUSD',
+                        'FRAX', 'LUSD', 'HUSD', 'OUSD']
         for coin in ex.markets:
             if coin.split('/')[1] == self.bb_strat.pair:
-                self.bb_strat.coin += coin.split('/')[0] + ', '
+                if filter_stable and coin.split('/')[0] in stable_coins:
+                    pass
+                else:
+                    self.bb_strat.coin += coin.split('/')[0] + ', '
         if self.bb_strat.coin:
             self.bb_strat.coin = self.bb_strat.coin[:-2]
 
-        # Set up Strats
-        if name == 'RSI DCA Minute Trading':
-            strat.candle = "1m"
-            strat.sell_per = "2"
-            strat.trail_per = ".5"
-            strat.dca_buyback_per = "10"
-            strat.rsi_buy = "30"
 
-        elif name == 'MACD Stoch Long Haul':
-            strat.candle = "4h"
-            strat.sell_per = "10"
-            strat.trail_per = "1"
-            strat.stop_per = "20"
-            strat.macd_cross_buy = "Yes"
-            strat.macd_color_buy = "Yes"
-            strat.stoch_val_buy = "30"
-
-        elif name == 'Cross and Pop':
-            strat.candle = "5m"
-            strat.sell_per = "2"
-            strat.trail_per = ".5"
-            strat.dca_buyback_per = "10"
-            strat.sma_cross_fast = "17"
-            strat.sma_cross_slow = "55"
-            strat.sma_cross_buy = "Yes"
+        # if name == 'RSI DCA Minute Trading':
+        #     strat.candle = "1m"
+        #     strat.sell_per = "2"
+        #     strat.trail_per = ".5"
+        #     strat.dca_buyback_per = "10"
+        #     strat.rsi_buy = "30"
+        #
+        # elif name == 'MACD Stoch Long Haul':
+        #     strat.candle = "4h"
+        #     strat.sell_per = "10"
+        #     strat.trail_per = "1"
+        #     strat.stop_per = "20"
+        #     strat.macd_cross_buy = "Yes"
+        #     strat.macd_color_buy = "Yes"
+        #     strat.stoch_val_buy = "30"
+        #
+        # elif name == 'Cross and Pop':
+        #     strat.candle = "5m"
+        #     strat.sell_per = "2"
+        #     strat.trail_per = ".5"
+        #     strat.dca_buyback_per = "10"
+        #     strat.sma_cross_fast = "17"
+        #     strat.sma_cross_slow = "55"
+        #     strat.sma_cross_buy = "Yes"
 
         # Resetting and making coins
         self.bb_cards = []
         for coin in self.bb_strat.coin.split(','):
             coin = coin.strip()
-            rec = Record()
+            rec = BaseRecord()
             rec.set_record(self.bb_strat.to_dict())
             rec.coin = coin
             rec.kind = 'Basic Bot'

@@ -64,7 +64,7 @@ async def manage_input(self, msg):
         await self.save()
         self.pause_msg = False
 
-    elif msg == 'set strat':
+    elif msg == 'set bb strat':
         await self.set_bb_strat()
 
     elif msg == 'activate bb':
@@ -86,7 +86,7 @@ async def manage_input(self, msg):
     elif msg == 'bb status':
         msg = '*******'
         msg += 'Basic Bot Status:'
-        msg += '\n-Strategy: ' + str(self.bb_strat.kind)
+        msg += '\n-Strategy: ' + str(self.bb_strat.title)
         msg += '\n-Exchange: ' + str(self.bb_strat.exchange)
         msg += '\n-Pair: ' + str(self.bb_strat.pair)
         msg += '\n-Pair Min Mult: ' + str(self.bb_strat.pair_minmult)

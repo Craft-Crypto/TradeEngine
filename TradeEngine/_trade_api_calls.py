@@ -4,6 +4,7 @@ import aiohttp
 import asyncio
 import time
 import json
+import ast
 
 engine_api = Quart(__name__)
 pfx = '/cc/api/v1'
@@ -46,7 +47,7 @@ async def get_all_prices():
 @engine_api.route(pfx + '/bb_data', methods=['GET'])
 async def get_bb_data():
     data = {}
-    data['strat'] = engine_api.worker.bb_strat.to_json()
+    data['strat'] = engine_api.worker.bb_strat.to_dict()
     data['cards'] = engine_api.worker.bb_cards
     data['trades'] = engine_api.worker.bb_trades
     data['trade_limit'] = engine_api.worker.bb_trade_limit
@@ -101,7 +102,6 @@ async def get_api_data():
 
 @engine_api.route(pfx + '/set_api_keys', methods=['POST'])
 async def set_api_data():
-    import ast
     form = await request.form
     data = ast.literal_eval(form['data'])
     for dd in data:

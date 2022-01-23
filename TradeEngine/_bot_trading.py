@@ -116,6 +116,7 @@ def check_card_trade(ex, card, cp, ohlc, *args):
 
     make_buy, make_sell, p = determine_buy_sell(indicators, card, closes, -2)
     # print(cp, len(closes), len(indicators))
+    card.last_evaluated_price = str(p)
     card.last_update = time.strftime('%I:%M:%S %p %m/%d/%y')
 # if not args:
 #     self.out_q.put(['update_cc', card])

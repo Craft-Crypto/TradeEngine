@@ -6,7 +6,7 @@ import time
 import ccxt.async_support as a_ccxt
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
-from CraftCrypto_Helpers.Helpers import get_store
+from CraftCrypto_Helpers.Helpers import get_store, save_store
 from TradeEngine._tele_api_calls import TeleBot
 from TradeEngine._trade_api_calls import engine_api
 from CraftCrypto_Helpers.BaseRecord import BaseRecord, convert_record
@@ -78,6 +78,53 @@ async def initialize(self):
     else:
         await self.my_msg('No Telegram Keys Found.', False, False)
         # await self.q.put('set tele keys')
+
+    await self.my_msg('Loading Strategies...', False, False)
+    store = get_store('BasicStrats')
+    if not store:
+        strat = BaseRecord()
+        strat.title = 'RSI DCA Minute Trading'
+        strat.description = ('This strategy uses 1 minute candles and the Relative Strength Index to ' +
+                             'initiate buys. It then looks for quick profit opportunities, and chances to ' +
+                             'Down Cost Average on the dips.')
+        strat.candle = "1m"
+        strat.sell_per = "2"
+        strat.trail_per = ".5"
+        strat.dca_buyback_per = "10"
+        strat.rsi_buy = "30"
+
+        strat1 = BaseRecord()
+        strat1.title = 'MACD Stoch Long Haul'
+        strat1.description = ('A Strategy that works on the 4 hour candle, but tends to find just the ' +
+                              'perfect time to buy. The Long Haul waits to buy when the MACD to cross up and ' +
+                              'be in the red, with a Stoch under 30, and keeps a moderate take profit, stop ' +
+                              'loss, and trail.')
+        strat1.candle = "4h"
+        strat1.sell_per = "10"
+        strat1.trail_per = "1"
+        strat1.stop_per = "20"
+        strat1.macd_cross_buy = "Yes"
+        strat1.macd_color_buy = "Yes"
+        strat1.stoch_val_buy = "30"
+
+        strat2 = BaseRecord()
+        strat2.title = 'Cross and Pop'
+        strat2.description = ('Combining Simple Moving Average Crosses with Trailing Stop Losses and ' +
+                              'Down Cost Averaging is a great way to earning profit off a volatile market in ' +
+                              'the 5 minute candle.')
+        strat2.candle = "5m"
+        strat2.sell_per = "2"
+        strat2.trail_per = ".5"
+        strat2.dca_buyback_per = "10"
+        strat2.sma_cross_fast = "17"
+        strat2.sma_cross_slow = "55"
+        strat2.sma_cross_buy = "Yes"
+
+        strat_store = {'1': strat.to_dict(),
+                       '2': strat1.to_dict(),
+                       '3': strat2.to_dict()
+        }
+        save_store('BasicStrats', strat_store)
 
     await self.my_msg('Loading Saved Trades...', False, False)
 

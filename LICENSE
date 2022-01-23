@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2022 Tom McLaughlin @ Craft-Crypto
+Copyright (c) 2022 Tom McLaughlin @ Craft-Crypto, LLC
 
 Other libraries used in the project:
 
@@ -11,6 +11,7 @@ Copyright (c) 2017 P G Jones - quart
 Copyright (c) 2007 vxgmichel - aioconsole
 Copyright (c) 2013-2021 Aymeric Augustin and contributors - websockets
 Copyright (c) 2017-2018 Alex Root Junior - aiogram
+Copyright (c) 2022 Craft-Crypto, LLC - Craft-Crypto Helpers
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
