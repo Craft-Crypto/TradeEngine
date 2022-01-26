@@ -7,6 +7,7 @@ from CraftCrypto_Helpers.BaseRecord import BaseRecord
 from aioconsole import ainput
 from CraftCrypto_Helpers.Helpers import is_float, save_store, copy_prec, get_store
 from TradeEngine._tele_api_calls import TeleBot
+from TradeEngine._trade_api_calls import broadcast
 import getpass
 import CraftCrypto_Helpers
 CraftCrypto_Helpers.Helpers.dir_path = '/Users/' + getpass.getuser() + '/Documents/Craft-Crypto/TradeEngine/'
@@ -23,6 +24,8 @@ class TradeEngine(object):
     def __init__(self, **kwargs):
         # Setup Server
         self.trade_server = None
+        self.ws_q = asyncio.queues.Queue()
+        self.action_q = asyncio.queues.Queue()
 
         # Setup Telegram Bot
         # self.tele_token = None
@@ -517,23 +520,25 @@ class TradeEngine(object):
                     # print('basic price', tp)
                     if tp in ex.prices:
                         # print('updating Basic', tp)
-                        now_price = tc.now_price
                         price = float(ex.prices[tp])
-                        if 'e' in str(price):
-                            tc.now_price = '{:.9f}'.format(price).rstrip('0')
-                        else:
-                            tc.now_price = str(price)
-
-                        if not tc.now_price == now_price:
+                        if not str(tc.now_price) == str(price):
                             tc.last_update = time.strftime('%I:%M:%S %p %m/%d/%y')
-                        try:
-                            # we should probably also add in buying and selling now too
-                            gl = float(tc.now_price) / float(tc.buy_price) * 100 - 100
-                            tc.gl_per = str(round(gl, 2))
+                            if 'e' in str(price):
+                                tc.now_price = '{:.9f}'.format(price).rstrip('0')
+                            else:
+                                tc.now_price = str(price)
 
-                        except Exception as e:
-                            msg = 'Gain/Loss Error: ' + str(e)
-                            await self.my_msg(msg, True, False)
+                            try:
+                                # we should probably also add in buying and selling now too
+                                gl = float(tc.now_price) / float(tc.buy_price) * 100 - 100
+                                tc.gl_per = str(round(gl, 2))
+                                # This should probably be sent to everyone
+                                await broadcast({'action': 'update_tc', 'card': tc.to_dict()})
+                                # self.ws_q.put({'action': 'update_tc', 'tc': tc.to_dict()})
+
+                            except Exception as e:
+                                msg = 'Gain/Loss Error: ' + str(e)
+                                await self.my_msg(msg, True, False)
 
         except Exception as e:
             msg = 'Socket Error: ' + str(e)

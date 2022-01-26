@@ -36,7 +36,7 @@ async def check_bot_cards(self, candle):
 async def do_check_bot_cards(self, candle, card, trades, trade_limit, count):
     # We can gain some effeciency by checking on the cards with trades first, and then going on to others. this way if over limit, that is cool.
     ex = self.exchange_selector(card.exchange)
-    if card.active: #ex.balance[card.pair] > 0 and card.active:  # Can be better by determining min buy and checking this first before continuing
+    if card.active: # ex.balance[card.pair] > 0 and card.active:  # Can be better by determining min buy and checking this first before continuing
         for coin in card.coin.split(','):
             cp = coin.strip() + '/' + card.pair
             if cp in ex.symbols:
@@ -106,9 +106,9 @@ def check_card_trade(ex, card, cp, ohlc, *args):
     test_binance = ex.price_to_precision(cp, test)
     test = copy_prec(test, test_binance, 2)
 
-    card.prec = test
-    if card.prec == '':
-        card.prec = '.11111111'
+    card.precision = test
+    if card.precision == '':
+        card.precision = '.11111111'
 
     # print('reference price', test, card['prec'], cp)
 
@@ -221,7 +221,7 @@ async def make_bot_buy(self, card, *args):
             await self.my_msg(msg, False, True)
 
     # if not args:
-    #     for old_card in self.ab_coincards:
+    #     for old_card in self.ab_cards:
     #         if old_card.my_id == card.my_id:
     #             print('FOUND CARDS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
     #             old_card.set_record(card.to_dict())
@@ -250,7 +250,7 @@ async def add_trade_card(self, is_basic, cp, card, buy_price, buy_amount):
                 rr = {}
                 rr.buy_price = str(buy_price)
                 rr.sold_price = '0'
-                rr.amount = copy_prec(buy_amount, '.111111111')
+                rr.amount = copy_prec(buy_amount, card.precision)
                 rr.sold = False
                 dc.childs.append(rr)
                 await self.cal_average_buys()
@@ -262,21 +262,21 @@ async def add_trade_card(self, is_basic, cp, card, buy_price, buy_amount):
     # print('c', card)
     t.coin = coin
     t.pair = pair
-    t.amount = copy_prec(buy_amount, '.111111111')
+    t.amount = copy_prec(buy_amount, card.precision)
     t.buy_price = str(buy_price)
     t.my_id = await self.get_my_id()
     rr = {'buy_price': str(buy_price),
           'sold_price': '0',
-          'amount': copy_prec(buy_amount, '.111111111'),
+          'amount': copy_prec(buy_amount, card.precision),
           'sold': False}
     t.childs.append(rr)
     if is_float(card.sell_per):
         sell = float(buy_price) * (100 + float(card.sell_per)) / 100
-        t.sell_price = copy_prec(sell, card.prec)
+        t.take_profit_price = copy_prec(sell, card.precision)
 
     if is_float(card.stop_per):
         stop = float(buy_price) * (100 - float(card.stop_per)) / 100
-        t.stop_price = copy_prec(stop, card.prec)
+        t.stop_price = copy_prec(stop, card.precision)
 
     trades.append(t)
     await self.cal_average_buys()
@@ -314,7 +314,7 @@ async def update_card_trade_data(self, trade):
                 mid = float(card.average_buys) * float(card.trade_vol) + float(trade.buy_price) * \
                       float(trade.amount)
                 new_avg = mid / (float(trade.amount) + float(card.trade_vol))
-                card.average_buys = copy_prec(new_avg, card.prec)
+                card.average_buys = copy_prec(new_avg, card.precision)
             else:
                 card.average_buys = trade.buy_price
 
@@ -322,7 +322,7 @@ async def update_card_trade_data(self, trade):
                 mid = float(card.average_sells) * float(card.trade_vol) + float(trade.sold_price) * \
                       float(trade.amount)
                 new_avg = mid / (float(trade.amount) + float(card.trade_vol))
-                card.average_sells = copy_prec(new_avg, card.prec)
+                card.average_sells = copy_prec(new_avg, card.precision)
             else:
                 card.average_sells = trade.sold_price
 
@@ -363,7 +363,7 @@ async def do_check_trade_sells(self, trades):
                 if is_float(tc.trail_per):
                     if is_float(tc.trail_price) and float(tc.now_price) <= float(tc.trail_price):
                         sell = True
-                    elif float(tc.now_price) >= float(tc.sell_price) and not is_float(tc.trail_price):
+                    elif float(tc.now_price) >= float(tc.take_profit_price) and not is_float(tc.trail_price):
                         new_trail_price = float(tc.now_price) * (100 - float(tc.trail_per)) / 100
                         tc.trail_price = copy_prec(new_trail_price, tc.now_price, 1)
                     elif is_float(tc.trail_price):
@@ -375,12 +375,12 @@ async def do_check_trade_sells(self, trades):
                     # if no stop, continue
                     elif not sell:
                         # check if price is ready to go
-                        if is_float(tc.now_price) and is_float(tc.sell_price):
-                            if float(tc.now_price) >= float(tc.sell_price):
+                        if is_float(tc.now_price) and is_float(tc.take_profit_price):
+                            if float(tc.now_price) >= float(tc.take_profit_price):
                                 sell = True
 
                         # Check in with Trade's coin card.
-                        for card in self.ab_coincards:
+                        for card in self.ab_cards:
                             if card.coin == tc.coin and card.pair == tc.pair and card.exchange == tc.exchange:
                                 # the is the combination of all selling parameters
                                 sell = card.ready_sell
@@ -392,8 +392,8 @@ async def do_check_trade_sells(self, trades):
                                         sell = False
 
                         # Checks to see if TI says to sell, but it is under a take profit
-                        if is_float(tc.now_price) and is_float(tc.sell_price) and sell:
-                            if not float(tc.now_price) >= float(tc.sell_price):
+                        if is_float(tc.now_price) and is_float(tc.take_profit_price) and sell:
+                            if not float(tc.now_price) >= float(tc.take_profit_price):
                                 sell = False
 
                 # If the bot has logged no price yet, don't sell
@@ -428,7 +428,7 @@ async def do_check_trade_sells(self, trades):
                 if sell_amt > 0:
                     await self.a_debit_exchange(ex, 1)
                     sell_amt = float(ex.amount_to_precision(sym, sell_amt * self.sell_mod))
-                    msg = 'Time to Sell ' + sym + '!\n Sell Price: ' + tc.sell_price + '\nCurrent Price: ' + \
+                    msg = 'Time to Sell ' + sym + '!\n Sell Price: ' + tc.take_profit_price + '\nCurrent Price: ' + \
                           tc.now_price + '\nBuy Price: ' + tc.buy_price
                     await self.my_msg(msg, True, False)
                     try:

@@ -5,9 +5,65 @@ import asyncio
 import time
 import json
 import ast
+from functools import partial, wraps
 
 engine_api = Quart(__name__)
 pfx = '/cc/api/v1'
+
+
+connected_websockets = set()
+
+
+def collect_websocket(func):
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        global connected_websockets
+        queue = asyncio.Queue()
+        connected_websockets.add(queue)
+        try:
+            return await func(queue, *args, **kwargs)
+        finally:
+            connected_websockets.remove(queue)
+    return wrapper
+
+
+async def broadcast(message):
+    for queue in connected_websockets:
+        await queue.put(message)
+
+
+@engine_api.websocket(pfx + '/ws')
+@collect_websocket
+async def ws_v2(queue):
+    while True:
+        while not queue.empty():
+            data = await queue.get()
+            await websocket.send_json(data)
+        try:
+            data = await asyncio.wait_for(websocket.receive(), .25)
+            print(data, json.loads(data))
+            data = json.loads(data)
+            # await websocket.send_json(data)
+            send_data = None
+            if data['action'] == 'bb_data':
+                send_data = await get_bb_data(True)
+            elif data['action'] == 'bb_active':
+                await set_bb_active()
+                send_data = await get_bb_data(True)
+            elif data['action'] == 'ab_data':
+                send_data = await get_ab_data(True)
+            elif data['action'] == 'api_keys':
+                send_data = await get_api_data(True)
+            elif data['action'] == 'msgs':
+                send_data = await get_msgs(True)
+
+            if send_data:
+                await websocket.send_json(data | send_data)
+
+        except asyncio.exceptions.TimeoutError:
+            pass
+        except Exception as e:
+            print('back to checking....', e, e.__class__)
 
 
 @engine_api.route(pfx + '/ping', methods=['GET'])
@@ -45,28 +101,39 @@ async def get_all_prices():
 
 
 @engine_api.route(pfx + '/bb_data', methods=['GET'])
-async def get_bb_data():
+async def get_bb_data(*args):
     data = {}
     data['strat'] = engine_api.worker.bb_strat.to_dict()
     data['cards'] = engine_api.worker.bb_cards
     data['trades'] = engine_api.worker.bb_trades
     data['trade_limit'] = engine_api.worker.bb_trade_limit
     data['active'] = engine_api.worker.bb_active
+    if args:
+        return data
     return jsonify(data)
 
 
+@engine_api.route(pfx + '/bb_active', methods=['GET'])
+async def set_bb_active():
+    engine_api.worker.bb_active = not engine_api.worker.bb_active
+    print('flipped')
+    return 'flipped'
+
+
 @engine_api.route(pfx + '/ab_data', methods=['GET'])
-async def get_ab_data():
+async def get_ab_data(*args):
     data = {}
     data['cards'] = engine_api.worker.ab_cards
     data['trades'] = engine_api.worker.ab_trades
     data['trade_limit'] = engine_api.worker.ab_trade_limit
     data['active'] = engine_api.worker.ab_active
+    if args:
+        return data
     return jsonify(data)
 
 
 @engine_api.route(pfx + '/api_keys', methods=['GET'])
-async def get_api_data():
+async def get_api_data(*args):
     data = {}
     for exchange in engine_api.worker.exchanges:
         ex = engine_api.worker.exchange_selector(exchange)
@@ -96,7 +163,8 @@ async def get_api_data():
         data['tele_token'] = ''
         data['tele_chat'] = ''
         
-
+    if args:
+        return data
     return jsonify(data)
 
 
@@ -134,10 +202,12 @@ async def set_api_data():
 
 
 @engine_api.route(pfx + '/msgs', methods=['GET'])
-async def get_msgs():
+async def get_msgs(*args):
     msg = []
     while not engine_api.worker.msg_q.empty():
         msg.append(engine_api.worker.msg_q.get())
+    if args:
+        return msg
     return jsonify(msg)
     
 
