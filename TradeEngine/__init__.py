@@ -211,6 +211,7 @@ class TradeEngine(object):
         store = get_store('BasicStrats')
         if store:
             strat.set_record(store[strat_index])
+            strat.strat_index = strat_index
         else:
             await self.my_msg('Another Error with Strategy Store. Please restart to remake:', False, False)
 
@@ -232,32 +233,6 @@ class TradeEngine(object):
         if self.bb_strat.coin:
             self.bb_strat.coin = self.bb_strat.coin[:-2]
 
-
-        # if name == 'RSI DCA Minute Trading':
-        #     strat.candle = "1m"
-        #     strat.sell_per = "2"
-        #     strat.trail_per = ".5"
-        #     strat.dca_buyback_per = "10"
-        #     strat.rsi_buy = "30"
-        #
-        # elif name == 'MACD Stoch Long Haul':
-        #     strat.candle = "4h"
-        #     strat.sell_per = "10"
-        #     strat.trail_per = "1"
-        #     strat.stop_per = "20"
-        #     strat.macd_cross_buy = "Yes"
-        #     strat.macd_color_buy = "Yes"
-        #     strat.stoch_val_buy = "30"
-        #
-        # elif name == 'Cross and Pop':
-        #     strat.candle = "5m"
-        #     strat.sell_per = "2"
-        #     strat.trail_per = ".5"
-        #     strat.dca_buyback_per = "10"
-        #     strat.sma_cross_fast = "17"
-        #     strat.sma_cross_slow = "55"
-        #     strat.sma_cross_buy = "Yes"
-
         # Resetting and making coins
         self.bb_cards = []
         for coin in self.bb_strat.coin.split(','):
@@ -267,7 +242,12 @@ class TradeEngine(object):
             rec.coin = coin
             rec.kind = 'Basic Bot'
             rec.active = True
+            rec.title = ''
+            rec.description = ''
+            rec.my_id = str(time.time())
             self.bb_cards.append(rec)
+
+        await self.gather_update_bals()
 
         return True
 

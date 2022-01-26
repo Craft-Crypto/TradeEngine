@@ -6,6 +6,7 @@ import time
 import json
 import ast
 from functools import partial, wraps
+from CraftCrypto_Helpers.Helpers import get_store
 
 engine_api = Quart(__name__)
 pfx = '/cc/api/v1'
@@ -41,7 +42,6 @@ async def ws_v2(queue):
             await websocket.send_json(data)
         try:
             data = await asyncio.wait_for(websocket.receive(), .25)
-            print(data, json.loads(data))
             data = json.loads(data)
             # await websocket.send_json(data)
             send_data = None
@@ -49,6 +49,12 @@ async def ws_v2(queue):
                 send_data = await get_bb_data(True)
             elif data['action'] == 'bb_active':
                 await set_bb_active()
+                data['action'] = 'bb_data'
+                send_data = await get_bb_data(True)
+            elif data['action'] == 'bb_now':
+                engine_api.worker.bb_active = True
+                await engine_api.worker.check_bot_cards(engine_api.worker.bb_strat.candle)
+                data['action'] = 'bb_data'
                 send_data = await get_bb_data(True)
             elif data['action'] == 'ab_data':
                 send_data = await get_ab_data(True)
@@ -56,14 +62,76 @@ async def ws_v2(queue):
                 send_data = await get_api_data(True)
             elif data['action'] == 'msgs':
                 send_data = await get_msgs(True)
+            elif data['action'] == 'get_strats':
+                store = get_store('BasicStrats')
+                send_data = {}
+                if store:
+                    send_data['store'] = store
+                else:
+                    send_data['store'] = {'title': 'No Strategies Found',
+                                          'description': 'Restart Trade Engine to remake.'}
+
+            elif data['action'] == 'edit_strat':
+                ex = data['sent_data']['exchange']
+                index = data['sent_data']['strat_index']
+                pair = data['sent_data']['pair']
+                await engine_api.worker.update_strat(ex, index, pair, True)
+                engine_api.worker.bb_trade_limit = data['sent_data']['limit']
+                engine_api.worker.bb_strat.pair_minmult = data['sent_data']['pair_minmult']
+                data['action'] = 'bb_data'
+                send_data = await get_bb_data(True)
+
+            elif data['action'] == 'delete_card':
+                i = 0
+                for card in engine_api.worker.bb_cards:
+                    if card.my_id == data['my_id']:
+                        del engine_api.worker.bb_cards[i]
+                        break
+                    i += 1
+                i = 0
+                for card in engine_api.worker.ab_cards:
+                    if card['my_id'] == data['my_id']:
+                        del engine_api.worker.ab_cards[card]
+                        break
+                    i += 1
+                data['action'] = 'bb_data'
+                send_data = await get_bb_data(True)
+
+            elif data['action'] == 'buy_card':
+                for card in engine_api.worker.bb_cards:
+                    if card.my_id == data['my_id']:
+                        card.buy_now = True
+                        break
+                for card in engine_api.worker.ab_cards:
+                    if card.my_id == data['my_id']:
+                        card.buy_now = True
+                        break
+                data['action'] = 'bb_data'
+                send_data = await get_bb_data(True)
+
+            elif data['action'] == 'toggle_card_active':
+                for card in engine_api.worker.bb_cards:
+                    if card.my_id == data['my_id']:
+                        card.active = not card.active
+                        break
+                for card in engine_api.worker.ab_cards:
+                    if card.my_id == data['my_id']:
+                        card.active = not card.active
+                        break
+                data['action'] = 'bb_data'
+                send_data = await get_bb_data(True)
+
 
             if send_data:
-                await websocket.send_json(data | send_data)
-
+                try:
+                    await websocket.send_json(data | send_data)
+                except Exception as e:
+                    print(e)
         except asyncio.exceptions.TimeoutError:
             pass
-        except Exception as e:
-            print('back to checking....', e, e.__class__)
+        # except Exception as e:
+        #     print('back to checking....', e, e.__class__)
+        #     print(data, send_data)
 
 
 @engine_api.route(pfx + '/ping', methods=['GET'])

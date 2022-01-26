@@ -138,7 +138,7 @@ async def initialize(self):
         store = get_store('BasicBot')
         if store:
             try:
-                self.bb_strat.set_record(store['bb_strat'])
+                self.bb.set_record(store['bb_strat'])
                 for cc in store['bb_cards']:
                     rec = BaseRecord()
                     rec.set_record(cc)

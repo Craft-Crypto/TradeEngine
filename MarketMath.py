@@ -43,37 +43,37 @@ def determine_buy_sell(indicators, card, closes, i, ):
      rsi_val, bb_high, bb_low, macd_sig, k_d, psar_val] = indicators
 
     p = closes[i]
-    card.last_price = copy_prec(p, card.prec)
+    card.last_price = copy_prec(p, card.precision)
 
     ema_per = float(card.ema_percent) if is_float(card.ema_percent) else 0
     sma_per = float(card.sma_percent) if is_float(card.sma_percent) else 0
 
     if card.ema_buy == 'Yes':
-        card.ema_val = copy_prec(my_ema[i], card.prec)
+        card.ema_val = copy_prec(my_ema[i], card.precision)
         if not (p < my_ema[i] * (100 - ema_per) / 100):
             make_buy = False
             # count += 1
 
     if card.sma_buy == 'Yes':
-        card.sma_val = copy_prec(my_sma[i], card.prec)
+        card.sma_val = copy_prec(my_sma[i], card.precision)
         if not (p < my_sma[i] * (100 - sma_per) / 100):
             make_buy = False
 
     if card.ema_cross_buy == 'Yes':
-        card.ema_cross_val_fast = copy_prec(my_ema_fast[i], card.prec)
-        card.ema_cross_val_slow = copy_prec(my_ema_slow[i], card.prec)
+        card.ema_cross_val_fast = copy_prec(my_ema_fast[i], card.precision)
+        card.ema_cross_val_slow = copy_prec(my_ema_slow[i], card.precision)
         if not (my_ema_fast[i] > my_ema_slow[i] and my_ema_fast[i-1] < my_ema_slow[i-1]):
             make_buy = False
 
     if card.sma_cross_buy == 'Yes':
-        card.sma_cross_val_fast = copy_prec(my_sma_fast[i], card.prec)
-        card.sma_cross_val_slow = copy_prec(my_sma_slow[i], card.prec)
+        card.sma_cross_val_fast = copy_prec(my_sma_fast[i], card.precision)
+        card.sma_cross_val_slow = copy_prec(my_sma_slow[i], card.precision)
         if not (my_sma_fast[i] > my_sma_slow[i] and my_sma_fast[i-1] < my_sma_slow[i-1]):
             make_buy = False
 
     if card.ema_sma_cross_buy == 'Yes':
-        card.ema_sam_cross_val_fast = copy_prec(my_emasma_fast[i], card.prec)
-        card.ema_sam_cross_val_slow = copy_prec(my_emasma_slow[i], card.prec)
+        card.ema_sam_cross_val_fast = copy_prec(my_emasma_fast[i], card.precision)
+        card.ema_sam_cross_val_slow = copy_prec(my_emasma_slow[i], card.precision)
         if not (my_emasma_fast[i] > my_emasma_slow[i] and my_emasma_fast[i-1] < my_emasma_slow[i-1]):
             make_buy = False
 
@@ -83,26 +83,26 @@ def determine_buy_sell(indicators, card, closes, i, ):
             make_buy = False
 
     if is_float(card.bb_buy):
-        card.bb_under_val = copy_prec(bb_low[i], card.prec, 1)
+        card.bb_under_val = copy_prec(bb_low[i], card.precision, 1)
         bb_mult = (100 - float(card.bb_buy)) / 100 * bb_low[i]
         if not (p < bb_mult):
             make_buy = False
 
     if card.macd_cross_buy == 'Yes':
-        card.macd_val = copy_prec(macd_sig[0][i], card.prec, 2)
-        card.macd_signal_val = copy_prec(macd_sig[1][i], card.prec, 2)
+        card.macd_val = copy_prec(macd_sig[0][i], card.precision, 2)
+        card.macd_signal_val = copy_prec(macd_sig[1][i], card.precision, 2)
         if not (macd_sig[0][i] > macd_sig[1][i] and macd_sig[0][i-1] < macd_sig[1][i-1]):
             make_buy = False
 
     if card.macd_color_buy == 'Yes':
-        card.macd_val = copy_prec(macd_sig[0][i], card.prec, 2)
-        card.macd_signal_val = copy_prec(macd_sig[1][i], card.prec, 2)
+        card.macd_val = copy_prec(macd_sig[0][i], card.precision, 2)
+        card.macd_signal_val = copy_prec(macd_sig[1][i], card.precision, 2)
         if not (macd_sig[0][i] < macd_sig[1][i]):
             make_buy = False
 
     if card.macd_0_buy == 'Yes':
-        card.macd_val = copy_prec(macd_sig[0][i], card.prec, 2)
-        card.macd_signal_val = copy_prec(macd_sig[1][i], card.prec, 2)
+        card.macd_val = copy_prec(macd_sig[0][i], card.precision, 2)
+        card.macd_signal_val = copy_prec(macd_sig[1][i], card.precision, 2)
         if not (macd_sig[0][i] < 0 and macd_sig[1][i] < 0):
             make_buy = False
 
@@ -120,37 +120,37 @@ def determine_buy_sell(indicators, card, closes, i, ):
             make_buy = False
 
     if card.psar_cross_buy == 'Yes':
-        card.psar_val = copy_prec(psar_val[i], card.prec)
+        card.psar_val = copy_prec(psar_val[i], card.precision)
         if not psar_val[i] > p:
             make_buy = False
 
     if card.ema_sell == 'Yes':
-        card.ema_val = copy_prec(my_ema[i], card.prec)
+        card.ema_val = copy_prec(my_ema[i], card.precision)
         if not (p > my_ema[i] * (100 + ema_per) / 100):
             make_sell = False
 
     if card.sma_sell == 'Yes':
-        card.sma_val = copy_prec(my_sma[i], card.prec)
+        card.sma_val = copy_prec(my_sma[i], card.precision)
         if not (p > my_sma[i] * (100 + sma_per) / 100):
             make_sell = False
 
     if card.ema_cross_sell == 'Yes':
-        card.ema_cross_val_fast = copy_prec(my_ema_fast[i], card.prec)
-        card.ema_cross_val_slow = copy_prec(my_ema_slow[i], card.prec)
+        card.ema_cross_val_fast = copy_prec(my_ema_fast[i], card.precision)
+        card.ema_cross_val_slow = copy_prec(my_ema_slow[i], card.precision)
         if not (my_ema_fast[i] < my_ema_slow[i] and my_ema_fast[i-1] > my_ema_slow[i-1]):
             make_sell = False
         if make_sell:
             print('cross down!')
 
     if card.sma_cross_sell == 'Yes':
-        card.sma_cross_val_fast = copy_prec(my_sma_fast[i], card.prec)
-        card.sma_cross_val_slow = copy_prec(my_sma_slow[i], card.prec)
+        card.sma_cross_val_fast = copy_prec(my_sma_fast[i], card.precision)
+        card.sma_cross_val_slow = copy_prec(my_sma_slow[i], card.precision)
         if not (my_sma_fast[i] < my_sma_slow[i] and my_sma_fast[i-1] > my_sma_slow[i-1]):
             make_sell = False
 
     if card.ema_sma_cross_sell == 'Yes':
-        card.ema_sma_cross_val_fast = copy_prec(my_emasma_fast[i], card.prec)
-        card.ema_sma_cross_val_slow = copy_prec(my_emasma_slow[i], card.prec)
+        card.ema_sma_cross_val_fast = copy_prec(my_emasma_fast[i], card.precision)
+        card.ema_sma_cross_val_slow = copy_prec(my_emasma_slow[i], card.precision)
         if not (my_emasma_fast[i] < my_emasma_slow[i] and my_emasma_fast[i-1] > my_emasma_slow[i-1]):
             make_sell = False
 
@@ -160,26 +160,26 @@ def determine_buy_sell(indicators, card, closes, i, ):
             make_sell = False
 
     if is_float(card.bb_sell):
-        card.bb_under_val = copy_prec(bb_high[i], card.prec, 1)
+        card.bb_under_val = copy_prec(bb_high[i], card.precision, 1)
         bb_mult = (100 + float(card.bb_sell)) / 100 * bb_high[i]
         if not (p > bb_mult):
             make_sell = False
 
     if card.macd_cross_sell == 'Yes':
-        card.macd_val = copy_prec(macd_sig[0][i], card.prec, 2)
-        card.macd_signal_val = copy_prec(macd_sig[1][i], card.prec, 2)
+        card.macd_val = copy_prec(macd_sig[0][i], card.precision, 2)
+        card.macd_signal_val = copy_prec(macd_sig[1][i], card.precision, 2)
         if not (macd_sig[0][i] < macd_sig[1][i] and macd_sig[0][i-1] > macd_sig[1][i-1]):
             make_sell = False
 
     if card.macd_color_sell == 'Yes':
-        card.macd_val = copy_prec(macd_sig[0][i], card.prec, 2)
-        card.macd_signal_val = copy_prec(macd_sig[1][i], card.prec, 2)
+        card.macd_val = copy_prec(macd_sig[0][i], card.precision, 2)
+        card.macd_signal_val = copy_prec(macd_sig[1][i], card.precision, 2)
         if not (macd_sig[0][i] > macd_sig[1][i]):
             make_sell = False
 
     if card.macd_0_sell == 'Yes':
-        card.macd_val = copy_prec(macd_sig[0][i], card.prec, 2)
-        card.macd_signal_val = copy_prec(macd_sig[1][i], card.prec, 2)
+        card.macd_val = copy_prec(macd_sig[0][i], card.precision, 2)
+        card.macd_signal_val = copy_prec(macd_sig[1][i], card.precision, 2)
         if not (macd_sig[0][i] > 0 and macd_sig[1][i] > 0):
             make_sell = False
 
@@ -196,7 +196,7 @@ def determine_buy_sell(indicators, card, closes, i, ):
             make_sell = False
 
     if card.psar_cross_sell == 'Yes':
-        card.psar_val = copy_prec(psar_val[i], card.prec)
+        card.psar_val = copy_prec(psar_val[i], card.precision)
         if not psar_val[i] < p:
             make_sell = False
     

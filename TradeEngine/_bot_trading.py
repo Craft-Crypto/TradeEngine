@@ -226,6 +226,8 @@ async def make_bot_buy(self, card, *args):
     #             print('FOUND CARDS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
     #             old_card.set_record(card.to_dict())
 
+
+#I need this
 # if card['buy_now']:
 #     msg = 'Insufficient balance to buy ' + cp + '. Attempted to buy ' + card['coin']
 #     msg += ' with ' + str(pair_bal) + ' ' + card['pair'] + '.'
