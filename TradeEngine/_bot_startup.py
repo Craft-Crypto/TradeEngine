@@ -70,10 +70,7 @@ async def initialize(self):
         await self.my_msg('Error in Loading Telegram Keys: ' + str(e), False, False)
 
     if token and chat_id:
-        self.tele_bot = TeleBot(token, chat_id, self)
-        await self.tele_bot.set_commands()
-        await self.tele_bot.set_dispatcher()
-
+        await self.init_tele_bot(token, chat_id)
         await self.my_msg('Telegram Bot Activated.', False, True)
     else:
         await self.my_msg('No Telegram Keys Found.', False, False)
@@ -325,3 +322,14 @@ async def test_apis(self, *args):
             msg = 'No keys found for ' + ex
             await self.my_msg(msg, False, False)
     return need_keys
+
+
+async def init_tele_bot(self, token, chat_id):
+    if not self.tele_bot:
+        self.tele_bot = TeleBot(token, chat_id, self)
+        await self.tele_bot.set_commands()
+        await self.tele_bot.set_dispatcher()
+    else:
+        self.tele_bot.token = token
+        self.tele_bot.chat_id = chat_id
+        await self.my_msg('Telegram Bot Activated', False, True)

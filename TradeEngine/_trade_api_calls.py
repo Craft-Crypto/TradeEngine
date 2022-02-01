@@ -118,8 +118,34 @@ async def ws_v2(queue):
                     if card.my_id == data['my_id']:
                         card.active = not card.active
                         break
-                data['action'] = 'bb_data'
+                data['action'] == 'bb_data'
                 send_data = await get_bb_data(True)
+
+            elif data['action'] == 'set_api_keys':
+                # keys = ast.literal_eval(data['keys'])
+                keys = data['keys']
+                for key in keys:
+                    ex = engine_api.worker.exchange_selector(key)
+                    # try:
+                    print(key, keys[key])
+                    ex.apiKey = keys[key]['key']
+                    ex.secret = keys[key]['secret']
+                    if key == 'Coinbase Pro':
+                        ex.password = keys[key]['password']
+
+                engine_api.worker.test_apis()
+
+            elif data['action'] == 'set_tele_token':
+                # keys = ast.literal_eval(data['keys'])
+                if not engine_api.worker.tele_bot:
+                    await engine_api.worker.init_tele_bot(data['token'], 'test_chat_id')
+                else:
+                    await engine_api.worker.init_tele_bot(data['token'], engine_api.worker.tele_bot.chat_id)
+
+            elif data['action'] == 'set_tele_chat':
+                # keys = ast.literal_eval(data['keys'])
+                if engine_api.worker.tele_bot:
+                    await engine_api.worker.init_tele_bot(engine_api.worker.tele_bot.token, data['chat_id'])
 
 
             if send_data:

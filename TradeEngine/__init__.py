@@ -16,7 +16,7 @@ CraftCrypto_Helpers.Helpers.dir_path = '/Users/' + getpass.getuser() + '/Documen
 class TradeEngine(object):
     from ._ex_websockets import websocket_bin, websocket_binUS, websocket_bm
     from ._ex_websockets import websocket_cbp, websocket_ftx, websocket_kraken
-    from ._bot_startup import initialize, test_apis
+    from ._bot_startup import initialize, test_apis, init_tele_bot
     from ._input_management import manage_input
     from ._bot_trading import check_bot_cards, do_check_bot_cards, make_bot_buy, quick_trade
     from ._bot_trading import add_trade_card, update_card_trade_data, check_trade_sells, do_check_trade_sells
