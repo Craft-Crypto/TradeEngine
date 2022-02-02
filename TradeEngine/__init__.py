@@ -107,34 +107,37 @@ class TradeEngine(object):
         await self.q.put(content)
         self.looking = False
 
-    async def my_msg(self, text, verbose, tele, *args):
+    async def my_msg(self, text, verbose=False, to_tele=False, to_broad=False, *args):
         if verbose and self.verbose:
             print(text)
-            self.msg_q.put(text)
+
         if not verbose:
             print(text)
-            self.msg_q.put(text)
 
-        if tele and self.tele_bot:
+        if to_broad:
+            print('broadcasting')
+            await broadcast({'action': 'msgs', 'msg': text})
+
+        if to_tele and self.tele_bot:
             if self.tele_bot.chat_id:
                 try:
                     await self.tele_bot.send_message(chat_id=self.tele_bot.chat_id, text=text)
                 except Exception as e:
                     msg = 'Telegram posting msg Error: ' + str(e)
-                    await self.my_msg(msg, False, False)
+                    await self.my_msg(msg, to_broad=True)
 
         tim = time.strftime('%I:%M:%S %p %m/%d/%y')
         self.log_msgs.append((tim + ': ' + text))
 
     async def set_bb_strat(self):
-        await self.my_msg('*******', False, False)
-        await self.my_msg('Select an Exchange for the Bot:', False, False)
-        await self.my_msg('1 - Binance', False, False)
-        await self.my_msg('2 - Binance US', False, False)
-        await self.my_msg('3 - BitMEX', False, False)
-        await self.my_msg('4 - Coinbase Pro', False, False)
-        await self.my_msg('5 - FTX', False, False)
-        await self.my_msg('6 - Kraken', False, False)
+        await self.my_msg('*******')
+        await self.my_msg('Select an Exchange for the Bot:')
+        await self.my_msg('1 - Binance')
+        await self.my_msg('2 - Binance US')
+        await self.my_msg('3 - BitMEX')
+        await self.my_msg('4 - Coinbase Pro')
+        await self.my_msg('5 - FTX')
+        await self.my_msg('6 - Kraken')
         msg = await ainput(">")
         ex = ''
         if msg == '1':
@@ -150,14 +153,14 @@ class TradeEngine(object):
         elif msg == '6':
             ex = 'Kraken'
 
-        await self.my_msg('Select a Strategy for the Bot:', False, False)
+        await self.my_msg('Select a Strategy for the Bot:')
         store = get_store('BasicStrats')
         if store:
             for strat_num in store:
-                await self.my_msg(strat_num + ' - ' + store[strat_num]['title'], False, False)
-                await self.my_msg('-- ' + store[strat_num]['description'], False, False)
+                await self.my_msg(strat_num + ' - ' + store[strat_num]['title'])
+                await self.my_msg('-- ' + store[strat_num]['description'])
         else:
-            await self.my_msg('Error with Strategy Store. Please restart to remake:', False, False)
+            await self.my_msg('Error with Strategy Store. Please restart to remake:')
 
         strat_index = await ainput(">")
         # name = ''
@@ -169,11 +172,11 @@ class TradeEngine(object):
         #     name = 'Cross and Pop'
 
         pair = ''
-        await self.my_msg('Select a Trading Pair:', False, False)
+        await self.my_msg('Select a Trading Pair:')
         msg = await ainput(">")
         pair = msg.upper()
 
-        await self.my_msg('Filter Out Stable Coins? (Y/n):', False, False)
+        await self.my_msg('Filter Out Stable Coins? (Y/n):')
         msg = await ainput(">")
         if msg.lower() == 'n':
             filter_stable = False
@@ -184,16 +187,16 @@ class TradeEngine(object):
 
         if worked:
             # Need to filter out stable coin/stable coin
-            await self.my_msg('Basic Bot will trade the following:', False, False)
-            await self.my_msg(self.bb_strat.coin, False, False)
+            await self.my_msg('Basic Bot will trade the following:')
+            await self.my_msg(self.bb_strat.coin)
             await self.q.put('bb status')
         # enter a way to remove ones the user doesn't want
 
-        await self.my_msg('Enter a Pair Min Multiplier:', False, False)
+        await self.my_msg('Enter a Pair Min Multiplier:')
         msg = await ainput(">")
         self.bb_strat.pair_minmult = msg
 
-        await self.my_msg('Enter Active Trade Limit:', False, False)
+        await self.my_msg('Enter Active Trade Limit:')
         msg = await ainput(">")
         if is_float(msg):
             self.bb_trade_limit = msg
@@ -203,7 +206,7 @@ class TradeEngine(object):
     async def update_strat(self, exchange, strat_index, pair, filter_stable, *args):
         if not exchange and strat_index and pair:
             msg = 'Invalid Strategy Settings'
-            await self.my_msg(msg, False, True)
+            await self.my_msg(msg, to_tele=True, to_broad=True)
             return False
 
         self.bb_strat = BaseRecord()
@@ -213,7 +216,7 @@ class TradeEngine(object):
             strat.set_record(store[strat_index])
             strat.strat_index = strat_index
         else:
-            await self.my_msg('Another Error with Strategy Store. Please restart to remake:', False, False)
+            await self.my_msg('Another Error with Strategy Store. Please restart to remake:')
 
         strat.pair = pair
         strat.exchange = exchange
@@ -252,14 +255,14 @@ class TradeEngine(object):
         return True
 
     async def set_api_keys(self):
-        await self.my_msg('*******', False, False)
-        await self.my_msg('Select an Exchange to add keys:', False, False)
-        await self.my_msg('1 - Binance', False, False)
-        await self.my_msg('2 - Binance US', False, False)
-        await self.my_msg('3 - BitMEX', False, False)
-        await self.my_msg('4 - Coinbase Pro', False, False)
-        await self.my_msg('5 - FTX', False, False)
-        await self.my_msg('6 - Kraken', False, False)
+        await self.my_msg('*******')
+        await self.my_msg('Select an Exchange to add keys:')
+        await self.my_msg('1 - Binance')
+        await self.my_msg('2 - Binance US')
+        await self.my_msg('3 - BitMEX')
+        await self.my_msg('4 - Coinbase Pro')
+        await self.my_msg('5 - FTX')
+        await self.my_msg('6 - Kraken')
         msg = await ainput(">")
         ex = ''
         if msg == '1':
@@ -277,14 +280,14 @@ class TradeEngine(object):
 
         if ex:
             exchange = self.exchange_selector(ex)
-            await self.my_msg('Enter ' + ex + ' API Key:', False, False)
+            await self.my_msg('Enter ' + ex + ' API Key:')
             msg = await ainput(">")
             exchange.apiKey = msg.strip()
-            await self.my_msg('Enter ' + ex + ' API Secret:', False, False)
+            await self.my_msg('Enter ' + ex + ' API Secret:')
             msg = await ainput(">")
             exchange.secret = msg.strip()
             if ex == 'Coinbase Pro':
-                await self.my_msg('Enter ' + ex + ' API Password:', False, False)
+                await self.my_msg('Enter ' + ex + ' API Password:')
                 msg = await ainput(">")
                 exchange.password = msg.strip()
             await self.test_apis(str(exchange))
@@ -364,7 +367,7 @@ class TradeEngine(object):
                 msg = 'Error with ' + str(exchange) + ' Balance: Bad Gateway... will try again.'
             else:
                 msg = 'Error with ' + str(exchange) + ' Balance: ' + str(e)
-            await self.my_msg(msg, False, True)
+            await self.my_msg(msg, to_broad=True, to_tele=True)
 
     async def gather_update_bals(self, *args):
         tasks = []
@@ -436,7 +439,7 @@ class TradeEngine(object):
 
                 except Exception as e:
                     msg = 'Error in ' + str(ex) + ' balance update: ' + str(e)
-                    await self.my_msg(msg, False, True)
+                    await self.my_msg(msg, to_broad=True, to_tele=True)
 
                 # Now update all the cards
 
@@ -454,36 +457,36 @@ class TradeEngine(object):
                                 card.pair_bal = '0'
                 except Exception as e:
                     print(e)
-                    await self.my_msg('Error in updating card balances', False, True)
+                    await self.my_msg('Error in updating card balances', to_broad=True, to_tele=True)
 
     async def collect_balance(self):
         await self.gather_update_bals()
-        await self.my_msg('*******', False, True)
+        await self.my_msg('*******', to_tele=True)
         if len(self.a_binance.balance) > 3:
             msg = 'Binance Balance:'
             for bal in self.a_binance.balance:
                 msg += '\n' + bal + ': ' + str(self.a_binance.balance[bal])
-            await self.my_msg(msg, False, True)
+            await self.my_msg(msg, to_tele=True)
         if len(self.a_binanceUS.balance) > 3:
             msg = 'Binance US Balance:'
             for bal in self.a_binanceUS.balance:
                 msg += '\n' + bal + ': ' + str(self.a_binanceUS.balance[bal])
-            await self.my_msg(msg, False, True)
+            await self.my_msg(msg, to_tele=True)
         if len(self.a_cbp.balance) > 3:
             msg = 'Coinbase Pro Balance:'
             for bal in self.a_cbp.balance:
                 msg += '\n' + bal + ': ' + str(self.a_cbp.balance[bal])
-            await self.my_msg(msg, False, True)
+            await self.my_msg(msg, to_tele=True)
         if len(self.a_ftx.balance) > 3:
             msg = 'FTX Balance:'
             for bal in self.a_ftx.balance:
                 msg += '\n' + bal + ': ' + str(self.a_ftx.balance[bal])
-            await self.my_msg(msg, False, True)
+            await self.my_msg(msg, to_tele=True)
         if len(self.a_kraken.balance) > 3:
             msg = 'Kraken Balance:'
             for bal in self.a_kraken.balance:
                 msg += '\n' + bal + ': ' + str(self.a_kraken.balance[bal])
-            await self.my_msg(msg, False, True)
+            await self.my_msg(msg, to_tele=True)
 
     async def check_prices_sells(self):
         while self.running:
@@ -518,11 +521,11 @@ class TradeEngine(object):
 
                             except Exception as e:
                                 msg = 'Gain/Loss Error: ' + str(e)
-                                await self.my_msg(msg, True, False)
+                                await self.my_msg(msg, verbose=True, to_broad=True)
 
         except Exception as e:
             msg = 'Socket Error: ' + str(e)
-            await self.my_msg(msg, True, False)
+            await self.my_msg(msg, verbose=True, to_broad=True)
             time.sleep(2)
 
     async def async_get_ohlc(self, ex, cp, candle, candles_needed, *args):
@@ -538,7 +541,7 @@ class TradeEngine(object):
             timediff = last - first
         else:
             msg = 'Error in collecting candles for: ' + cp + ' on ' + str(ex)
-            await self.my_msg(msg, False, True)
+            await self.my_msg(msg, to_tele=True, to_broad=True)
             return None
 
         while len(ohlc) < candles_needed:
@@ -821,4 +824,4 @@ class TradeEngine(object):
         save_store('AdvancedBot', store)
 
         msg = 'Saved Data.'
-        await self.my_msg(msg, True, False)
+        await self.my_msg(msg, verbose=True)

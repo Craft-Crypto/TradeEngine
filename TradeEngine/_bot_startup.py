@@ -14,10 +14,10 @@ from CraftCrypto_Helpers.BaseRecord import BaseRecord, convert_record
 
 async def initialize(self):
     # Set up initial variables and such
-    await self.my_msg('Initializing...', False, False)
+    await self.my_msg('Initializing...')
     tt = time.time()
 
-    await self.my_msg('Loading Exchanges...', False, False)
+    await self.my_msg('Loading Exchanges...')
     self.a_binance = a_ccxt.binance({'options': {'adjustForTimeDifference': True}})
     self.a_binanceUS = a_ccxt.binanceus({'options': {'adjustForTimeDifference': True}})
     self.a_bitmex = a_ccxt.bitmex({'options': {'adjustForTimeDifference': True}})
@@ -37,7 +37,7 @@ async def initialize(self):
         ex.balance = {}
         ex.rate_limit = 10  # per second. Updates to more correct amount
 
-    await self.my_msg('Checking for API Keys...', False, False)
+    await self.my_msg('Checking for API Keys...')
     store = get_store('APIKeys')
     if store:
         for exchange in self.exchanges:
@@ -48,18 +48,18 @@ async def initialize(self):
                 if exchange == 'Coinbase Pro':
                     ex.password = store[exchange]['password']
             except Exception as e:
-                self.my_msg('Error in getting API Store ' + exchange, False, False)
+                self.my_msg('Error in getting API Store ' + exchange)
         print('did I get here?')
         need_keys = await self.test_apis()
         if need_keys:
             await self.q.put('set API keys')
     else:
-        await self.my_msg('No Keys Found...', False, False)
+        await self.my_msg('No Keys Found...')
         # await self.q.put('set API keys')
 
     # Now get Telegram Going
     store = get_store('TeleKeys')
-    await self.my_msg('Starting Telegram Bot...', False, False)
+    await self.my_msg('Starting Telegram Bot...')
     token = None
     chat_id = None
     try:
@@ -67,16 +67,16 @@ async def initialize(self):
             token = store['tele_token']
             chat_id = store['tele_chat']
     except Exception as e:
-        await self.my_msg('Error in Loading Telegram Keys: ' + str(e), False, False)
+        await self.my_msg('Error in Loading Telegram Keys: ' + str(e))
 
     if token and chat_id:
         await self.init_tele_bot(token, chat_id)
-        await self.my_msg('Telegram Bot Activated.', False, True)
+        await self.my_msg('Telegram Bot Activated.', to_tele=True)
     else:
-        await self.my_msg('No Telegram Keys Found.', False, False)
+        await self.my_msg('No Telegram Keys Found.')
         # await self.q.put('set tele keys')
 
-    await self.my_msg('Loading Strategies...', False, False)
+    await self.my_msg('Loading Strategies...')
     store = get_store('BasicStrats')
     if not store:
         strat = BaseRecord()
@@ -123,7 +123,7 @@ async def initialize(self):
         }
         save_store('BasicStrats', strat_store)
 
-    await self.my_msg('Loading Saved Trades...', False, False)
+    await self.my_msg('Loading Saved Trades...')
 
     # Check for Legacy
     store = get_store('LiteBot')
@@ -145,13 +145,13 @@ async def initialize(self):
                     rec.set_record(tc)
                     self.bb_trades.append(rec)
                 self.bb_trade_limit = store['bb_trade_limit']
-                await self.my_msg('Found Basic Bot Trades:', False, False)
+                await self.my_msg('Found Basic Bot Trades:')
             except Exception as e:
                 print(e)
-                await self.my_msg('Error loading Basic Bot Trades', False, False)
+                await self.my_msg('Error loading Basic Bot Trades')
 
         else:
-            await self.my_msg('No Saved Basic Bot Trades Found.', False, False)
+            await self.my_msg('No Saved Basic Bot Trades Found.')
             # await self.q.put('set strat')
 
     store = get_store('AdvancedBot')
@@ -166,12 +166,12 @@ async def initialize(self):
                 rec.set_record(tc)
                 self.ab_trades.append(rec)
             self.ab_trade_limit = store['ab_trade_limit']
-            await self.my_msg('Found Advanced Bot Trades:', False, False)
+            await self.my_msg('Found Advanced Bot Trades:')
         except Exception as e:
-            await self.my_msg('Error loading Advanced Bot Trades', False, False)
+            await self.my_msg('Error loading Advanced Bot Trades')
 
     else:
-        await self.my_msg('No Saved Advanced Bot Trades Found.', False, False)
+        await self.my_msg('No Saved Advanced Bot Trades Found.')
 
     #
     # await self.my_msg('Strategy: ' + self.strat_name, False, False)
@@ -180,7 +180,7 @@ async def initialize(self):
     # await self.my_msg('Pair Min Mult: ' + self.pair_minmult, False, False)
     # await self.my_msg('Trade Limit: ' + self.limit, False, False)
 
-    await self.my_msg('Setting Trade Data Scheduler...', False, False)
+    await self.my_msg('Setting Trade Data Scheduler...')
     self.sched = AsyncIOScheduler()
 
     t1 = cron.CronTrigger(second=3)
@@ -221,7 +221,7 @@ async def initialize(self):
     #
 
     # Set up server
-    await self.my_msg('Setting Up Trade Server...', False, False)
+    await self.my_msg('Setting Up Trade Server...')
     await asyncio.sleep(.5)
     config = Config()
     config.bind = ["0.0.0.0:8080"]  # As an exa
@@ -230,7 +230,7 @@ async def initialize(self):
     asyncio.ensure_future(serve(self.trade_server, config))
 
     # Exchange Finishing Up
-    await self.my_msg('Finishing Up Exchanges...', False, False)
+    await self.my_msg('Finishing Up Exchanges...')
     asyncio.ensure_future(self.refresh_api())
     self.a_binanceUS.rate_limit = 5
     await self.gather_update_bals()
@@ -239,9 +239,9 @@ async def initialize(self):
     await asyncio.sleep(3)
     asyncio.ensure_future(self.check_prices_sells())
     self.sched.start()
-    await self.my_msg('Initialization Complete.', False, False)
-    await self.my_msg('*******', False, False)
-    await self.my_msg('Enter \'setup\' to set up trading.', False, False)
+    await self.my_msg('Initialization Complete.')
+    await self.my_msg('*******')
+    await self.my_msg('Enter \'setup\' to set up trading.')
 
 
 async def test_apis(self, *args):
@@ -264,42 +264,42 @@ async def test_apis(self, *args):
                 if exchange.balance:
                     exchange.api_ok = True
                     msg = str(exchange) + ' API Keys Accepted'
-                    await self.my_msg(msg, False, False)
+                    await self.my_msg(msg, to_broad=True)
                     # await exchange.close()
                     need_keys = False
                     for n in range(1, 5):
                         try:
                             msg = 'Attempt ' + str(n) + ' to load markets...'
-                            await self.my_msg(msg, False, False)
+                            await self.my_msg(msg, to_broad=True)
                             await exchange.load_markets()
-                            await self.my_msg('Market loaded.', False, False)
+                            await self.my_msg('Market loaded.', to_broad=True)
                             break
                         except Exception as e:
                             msg = 'Connection Error: ' + str(e)
-                            await self.my_msg(msg, False, False)
+                            await self.my_msg(msg, to_broad=True)
                             if n == 5:
                                 msg = 'Exceeded Maximum number of retries'
-                                await self.my_msg(msg, False, False)
+                                await self.my_msg(msg, to_broad=True)
 
                     # Coinbase actually does not allow fetch tickers right now
                     if not str(exchange) == 'Coinbase Pro':
-                        await self.my_msg('Collecting Market Prices...', False, False)
+                        await self.my_msg('Collecting Market Prices...', to_broad=True)
                         price = await exchange.fetch_tickers()
                         if str(exchange) in ['Binance', 'Binance US', 'Kraken']:
                             try:
                                 for ky in price:
                                     exchange.prices[ky.replace('/', '')] = price[ky]['close']
                             except Exception as e:
-                                await self.my_msg(str(exchange) + 'Fetch Ticker Error: ' + str(e), False, False)
+                                await self.my_msg(str(exchange) + 'Fetch Ticker Error: ' + str(e), to_broad=True)
                         elif str(exchange) == 'FTX':
                             try:
                                 for ky in price:
                                     self.a_ftx.prices[ky.replace('/', '').replace('-', '')] = price[ky]['close']
                             except Exception as e:
-                                await self.my_msg('FTX Fetch Ticker Error: ' + str(e), False, False)
+                                await self.my_msg('FTX Fetch Ticker Error: ' + str(e), to_broad=True)
 
                     if not exchange.socket:
-                        await self.my_msg('Activating Web Socket...', False, False)
+                        await self.my_msg('Activating Web Socket...', to_broad=True)
                         if str(exchange) == 'Binance':
                             exchange.socket = asyncio.ensure_future(self.websocket_bin())
                         elif str(exchange) == 'Binance US':
@@ -312,15 +312,15 @@ async def test_apis(self, *args):
                             exchange.socket = asyncio.ensure_future(self.websocket_ftx())
                         elif str(exchange) == 'Kraken':
                             exchange.socket = asyncio.ensure_future(self.websocket_kraken())
-                    await self.my_msg(str(exchange) + ' loaded.', False, False)
+                    await self.my_msg(str(exchange) + ' loaded.', to_broad=True)
 
             except Exception as e:
                 exchange.api_ok = False
                 msg = 'Error with ' + ex + ' API Keys: ' + str(e)
-                await self.my_msg(msg, False, False)
+                await self.my_msg(msg, to_broad=True)
         else:
             msg = 'No keys found for ' + ex
-            await self.my_msg(msg, False, False)
+            await self.my_msg(msg)
     return need_keys
 
 
@@ -332,4 +332,4 @@ async def init_tele_bot(self, token, chat_id):
     else:
         self.tele_bot.token = token
         self.tele_bot.chat_id = chat_id
-        await self.my_msg('Telegram Bot Activated', False, True)
+        await self.my_msg('Telegram Bot Activated', to_tele=True, to_broad=True)

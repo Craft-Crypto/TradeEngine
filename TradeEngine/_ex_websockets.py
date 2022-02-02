@@ -9,7 +9,7 @@ async def websocket_bin(self):
     while self.running:
         try:
             # outer loop restarted every time the connection fails
-            print('connect to binance')
+            await self.my_msg('Connecting to Binance Websocket...', to_broad=True)
             websocket = await websockets.connect("wss://stream.binance.com:9443/ws/!ticker@arr")
             test = await websocket.send('{"method": "SUBSCRIBE", "params": ["!ticker@arr"], "id": 1}')
             try:
@@ -23,7 +23,7 @@ async def websocket_bin(self):
                                 if not msg in ['result', 'id']:
                                     self.a_binance.prices[msg['s']] = msg['c']
                         except Exception as e:
-                            await self.my_msg('Binance Websocket Error: ' + str(e), False, False)
+                            await self.my_msg('Binance Websocket Error: ' + str(e), to_tele=True, to_broad=True)
                     except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosed):
                         await asyncio.sleep(1)
                         break  # inner loop
@@ -32,10 +32,10 @@ async def websocket_bin(self):
                         self.a_binance.socket_connected = True
 
             except ConnectionRefusedError:
-                await self.my_msg('Binance Connection Refused: ' + str(e), True, False)
+                await self.my_msg('Binance Connection Refused: ' + str(e), to_tele=True, to_broad=True)
             await asyncio.sleep(5)
         except Exception as e:
-            await self.my_msg('Binance Websocket Secondary Error: ' + str(e), False, False)
+            await self.my_msg('Binance Websocket Secondary Error: ' + str(e), to_tele=True, to_broad=True)
             await asyncio.sleep(5)
 
 
@@ -43,7 +43,7 @@ async def websocket_binUS(self):
     while self.running:
         try:
             # outer loop restarted every time the connection fails
-            print('connect to binance US')
+            await self.my_msg('Connecting to Binance US Websocket...', to_broad=True)
             websocket = await websockets.connect("wss://stream.binance.us:9443/ws/!ticker@arr")
             test = await websocket.send('{"method": "SUBSCRIBE", "params": ["!ticker@arr"], "id": 1}')
             try:
@@ -57,7 +57,7 @@ async def websocket_binUS(self):
                                 if not msg in ['result', 'id']:
                                     self.a_binanceUS.prices[msg['s']] = msg['c']
                         except Exception as e:
-                            await self.my_msg('Binance US Websocket Error: ' + str(e) + ': ' + str(msg), False, False)
+                            await self.my_msg('Binance US Websocket Error: ' + str(e) + ': ' + str(msg), to_tele=True, to_broad=True)
                     except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosed):
                         await asyncio.sleep(1)
                         break  # inner loop
@@ -65,10 +65,10 @@ async def websocket_binUS(self):
                     if not self.a_binanceUS.socket_connected:
                         self.a_binanceUS.socket_connected = True
             except ConnectionRefusedError:
-                await self.my_msg('Binance US Connection Refused: ' + str(e), True, False)
+                await self.my_msg('Binance US Connection Refused: ' + str(e), to_tele=True, to_broad=True)
             await asyncio.sleep(5)
         except Exception as e:
-            await self.my_msg('Binance US Websocket Secondary Error: ' + str(e), False, False)
+            await self.my_msg('Binance US Websocket Secondary Error: ' + str(e), to_tele=True, to_broad=True)
             await asyncio.sleep(5)
 
 
@@ -76,7 +76,7 @@ async def websocket_bm(self):
     while self.running:
         try:
             # outer loop restarted every time the connection fails
-            print('connect to BitMEX')
+            await self.my_msg('Connecting to BitMEX Websocket...', to_broad=True)
             websocket = await websockets.connect("wss://ws.bitmex.com/realtime/?subscribe=trade")
             # test = await websocket.send('{"method": "SUBSCRIBE", "params": ["!ticker@arr"], "id": 1}')
             try:
@@ -90,7 +90,7 @@ async def websocket_bm(self):
                                 for msg in message['data']:
                                     self.a_bitmex.prices[msg['symbol']] = msg['price']
                         except Exception as e:
-                            await self.my_msg('BitMEX Websocket Error: ' + str(e), False, False)
+                            await self.my_msg('BitMEX Websocket Error: ' + str(e), to_tele=True, to_broad=True)
                     except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosed):
                         await asyncio.sleep(1)
                         break  # inner loop
@@ -98,10 +98,10 @@ async def websocket_bm(self):
                     if not self.a_bitmex.socket_connected:
                         self.a_bitmex.socket_connected = True
             except ConnectionRefusedError:
-                await self.my_msg('BitMEX Connection Refused: ' + str(e), True, False)
+                await self.my_msg('BitMEX Connection Refused: ' + str(e), to_tele=True, to_broad=True)
             await asyncio.sleep(5)
         except Exception as e:
-            await self.my_msg('BitMEX US Websocket Secondary Error: ' + str(e), False, False)
+            await self.my_msg('BitMEX US Websocket Secondary Error: ' + str(e), to_tele=True, to_broad=True)
             await asyncio.sleep(5)
 
 
@@ -109,7 +109,7 @@ async def websocket_cbp(self):
     while self.running:
         try:
             # outer loop restarted every time the connection fails
-            print('connect to cbp')
+            await self.my_msg('Connecting to Coinbase Pro Websocket...', to_broad=True)
             cbp_sym = str(['"{}"'.format(t) for t in self.a_cbp.markets]).replace("'", "").replace('/', '-')
             cbp_msg = '{"type": "subscribe", "product_ids":' + str(cbp_sym) + ', "channels": ["ticker", "heartbeat"]}'
             websocket = await websockets.connect("wss://ws-feed.pro.coinbase.com/")
@@ -127,7 +127,7 @@ async def websocket_cbp(self):
                                 self.a_cbp.prices[message['product_id'].replace('-', '')] = message['price']
                         except Exception as e:
                             if message:
-                                await self.my_msg('Coinbase Pro Websocket Error: ' + str(e), False, False)
+                                await self.my_msg('Coinbase Pro Websocket Error: ' + str(e), to_tele=True, to_broad=True)
                     except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosed):
                         await asyncio.sleep(1)
                         break  # inner loop
@@ -135,10 +135,10 @@ async def websocket_cbp(self):
                     if not self.a_cbp.socket_connected:
                         self.a_cbp.socket_connected = True
             except ConnectionRefusedError:
-                await self.my_msg('Coinbase Pro Connection Refused: ' + str(e), True, False)
+                await self.my_msg('Coinbase Pro Connection Refused: ' + str(e), to_tele=True, to_broad=True)
             await asyncio.sleep(5)
         except Exception as e:
-            await self.my_msg('Coinbase Pro Websocket Secondary Error: ' + str(e), False, False)
+            await self.my_msg('Coinbase Pro Websocket Secondary Error: ' + str(e), to_tele=True, to_broad=True)
             await asyncio.sleep(5)
 
 
@@ -146,6 +146,7 @@ async def websocket_ftx(self):
     while self.running:
         try:
             # outer loop restarted every time the connection fails
+            await self.my_msg('Connecting to FTX Websocket...', to_broad=True)
             ftx_sym = [t for t in self.a_ftx.markets]
             ftx_msg = []
             for sym in ftx_sym:
@@ -163,7 +164,7 @@ async def websocket_ftx(self):
                             if 'data' in message:
                                 self.a_ftx.prices[message['market'].replace('-', '').replace('/', '')] = message['data']['last']
                         except Exception as e:
-                            await self.my_msg('FTX Websocket Error: ' + str(e), False, False)
+                            await self.my_msg('FTX Websocket Error: ' + str(e), to_tele=True, to_broad=True)
                     except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosed):
                         await asyncio.sleep(1)
                         break  # inner loop, try reconnect
@@ -172,10 +173,10 @@ async def websocket_ftx(self):
                         self.a_ftx.socket_connected = True
 
             except ConnectionRefusedError:
-                await self.my_msg('FTX Connection Refused: ' + str(e), True, False)
+                await self.my_msg('FTX Connection Refused: ' + str(e), to_tele=True, to_broad=True)
             await asyncio.sleep(5)
         except Exception as e:
-            await self.my_msg('FTX Websocket Secondary Error: ' + str(e), False, False)
+            await self.my_msg('FTX Websocket Secondary Error: ' + str(e), to_tele=True, to_broad=True)
             await asyncio.sleep(5)
 
 
@@ -183,7 +184,7 @@ async def websocket_kraken(self):
     while self.running:
         try:
             # outer loop restarted every time the connection fails
-            print('connecting to kraken')
+            await self.my_msg('Connecting to Kraken Websocket...', to_broad=True)
             kraken_syms = [t for t in self.a_kraken.markets]
             kraken_msg = []#['{"event":"subscribe", "subscription":{"name":"ticker"}, "pair":["BTC/USD"]}']
             i = 0
@@ -219,9 +220,9 @@ async def websocket_kraken(self):
                                 # print(self.a_kraken.prices)
                             # print('kraken', message)
                         except Exception as e:
-                            await self.my_msg('Kraken Websocket Error: ' + str(e), False, False)
+                            await self.my_msg('Kraken Websocket Error: ' + str(e), to_tele=True, to_broad=True)
                     except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosed) as e:
-                        await self.my_msg('Kraken Websocket Secondary Error: ' + str(e), False, False)
+                        await self.my_msg('Kraken Websocket Secondary Error: ' + str(e), to_tele=True, to_broad=True)
                         await asyncio.sleep(1)
                         break  # inner loop
 
@@ -229,10 +230,10 @@ async def websocket_kraken(self):
                         self.a_kraken.socket_connected = True
             except ConnectionRefusedError as e:
                 # log something else
-                await self.my_msg('Kraken Connection Refused: ' + str(e), True, False)
+                await self.my_msg('Kraken Connection Refused: ' + str(e), to_tele=True, to_broad=True)
             await asyncio.sleep(5)
         except Exception as e:
-            await self.my_msg('Kraken Websocket Tertiary Error: ' + str(e), True, False)
+            await self.my_msg('Kraken Websocket Tertiary Error: ' + str(e), to_tele=True, to_broad=True)
             await asyncio.sleep(5)
 
 

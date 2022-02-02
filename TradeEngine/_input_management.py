@@ -5,17 +5,17 @@ from CraftCrypto_Helpers.Helpers import file_path, is_float, copy_prec
 
 async def manage_input(self, msg):
     if msg.lower() == 'setup':
-        await self.my_msg('Setup Exchange API Keys? (Y/n)', False, False)
+        await self.my_msg('Setup Exchange API Keys? (Y/n)')
         msg = await ainput(">")
         if msg.lower() in ['y', 'yes']:
             await self.set_api_keys()
 
-        await self.my_msg('Set BasicBot Trading? (Y/n)', False, False)
+        await self.my_msg('Set BasicBot Trading? (Y/n)')
         msg = await ainput(">")
         if msg.lower() in ['y', 'yes']:
             await self.set_bb_strat()
 
-        await self.my_msg('Setup Telegram Notifications? (Y/n)', False, False)
+        await self.my_msg('Setup Telegram Notifications? (Y/n)')
         msg = await ainput(">")
         if msg.lower() in ['y', 'yes']:
             await self.q.put('set tele keys')
@@ -24,42 +24,41 @@ async def manage_input(self, msg):
         await self.set_api_keys()
 
     elif msg == 'set tele keys':
-        await self.my_msg('Setting Up Telegram Bot...', False, False)
+        await self.my_msg('Setting Up Telegram Bot...')
         if self.tele_bot:
-            await self.my_msg('Telegram Bot already active. Reset? (Y/n)', False, False)
+            await self.my_msg('Telegram Bot already active. Reset? (Y/n)')
             msg = await ainput(">")
             if msg.lower() in ['y', 'yes']:
-                await self.my_msg('Stopping Telegram Bot...', False, False)
+                await self.my_msg('Stopping Telegram Bot...')
                 await self.tele_bot.stop_bot()
                 del self.tele_bot
             else:
                 return
 
-        await self.my_msg('*******', False, False)
+        await self.my_msg('*******')
         await self.my_msg('TradeCraft Lite can be controlled through a Telegram Bot. '
-                          'However, you need to make your own.', False, False)
+                          'However, you need to make your own.')
         await self.my_msg('This process is automated where it can be, '
-                          'but Telegram requires a human to kick it off.', False, False)
+                          'but Telegram requires a human to kick it off.')
         await self.my_msg('Creating a bot is straightforward, however. '
-                          'Create a Bot by starting a conversation on Telegram with @Botfather.', False,
-                          False)
-        await self.my_msg('When the bot is complete, enter the following:', False, False)
-        await self.my_msg('Telegram Chat Bot Key:', False, False)
+                          'Create a Bot by starting a conversation on Telegram with @Botfather.')
+        await self.my_msg('When the bot is complete, enter the following:')
+        await self.my_msg('Telegram Chat Bot Key:')
         msg = await ainput(">")
 
         try:
             self.tele_bot = TeleBot(msg, '', self)
             await self.tele_bot.set_commands()
             await self.tele_bot.set_dispatcher()
-            await self.my_msg('Bot added. Press /start in Telegram Bot', False, False)
+            await self.my_msg('Bot added. Press /start in Telegram Bot')
         except Exception as e:
             msg = 'Telegram Error: ' + str(e)
             await self.my_msg(msg)
 
-        await self.my_msg('Enter Telegram Chat Chat ID:', False, False)
+        await self.my_msg('Enter Telegram Chat Chat ID:')
         msg = await ainput(">")
         self.tele_bot.chat_id = msg
-        await self.my_msg('Telegram Bot Activated', False, True)
+        await self.my_msg('Telegram Bot Activated', to_tele=True)
 
         await self.save()
         self.pause_msg = False
@@ -69,11 +68,11 @@ async def manage_input(self, msg):
 
     elif msg == 'activate bb':
         self.bb_active = True
-        await self.my_msg('Basic Bot Enabled.', False, True)
+        await self.my_msg('Basic Bot Enabled.', to_tele=True, to_broad=True)
 
     elif msg == 'pause bb':
         self.bb_active = False
-        await self.my_msg('Basic Bot Paused.', False, True)
+        await self.my_msg('Basic Bot Paused.', to_tele=True, to_broad=True)
 
     elif msg == 'bb now':
         self.bb_active = True
@@ -91,30 +90,23 @@ async def manage_input(self, msg):
         msg += '\n-Pair: ' + str(self.bb_strat.pair)
         msg += '\n-Pair Min Mult: ' + str(self.bb_strat.pair_minmult)
         msg += '\n-Trade Limit: ' + str(self.bb_trade_limit)
-        await self.my_msg(msg, False, True)
+        await self.my_msg(msg, to_tele=True, to_broad=True)
 
     elif msg == 'activate ab':
         self.ab_active = True
-        await self.my_msg('Advanced Bot Enabled.', False, True)
+        await self.my_msg('Advanced Bot Enabled.', to_tele=True, to_broad=True)
 
     elif msg == 'pause ab':
         self.ab_active = False
-        await self.my_msg('Advanced Bot Paused.', False, True)
-
-    elif msg == 'eula':
-        msg = '*******\n'
-        file = open(file_path('EULA.txt'))
-        msg += file.read()
-        file.close()
-        await self.my_msg(msg, False, False)
+        await self.my_msg('Advanced Bot Paused.', to_tele=True, to_broad=True)
 
     elif msg in ['bb trades', 'ab trades']:
         trades = []
         if 'bb' in msg:
-            await self.my_msg('*******\nBasic Bot Trades:', False, True)
+            await self.my_msg('*******\nBasic Bot Trades:', to_tele=True, to_broad=True)
             trades = self.bb_trades
         else:
-            await self.my_msg('*******\nAdvanced Bot Trades:', False, True)
+            await self.my_msg('*******\nAdvanced Bot Trades:', to_tele=True, to_broad=True)
             trades = self.ab_trades
 
         if trades:
@@ -132,15 +124,15 @@ async def manage_input(self, msg):
                 msg += '\n- Last Updated: ' + tr.last_update
                 await self.my_msg(msg, False, True)
         else:
-            await self.my_msg('No trades found. Use \'activate bb\' or \'activate ab\' to begin trading.', False, True)
+            await self.my_msg('No trades found. Use \'activate bb\' or \'activate ab\' to begin trading.', to_tele=True)
 
     elif msg in ['bb detailed trades', 'ab detailed trades']:
         trades = []
         if 'bb' in msg:
-            await self.my_msg('*******\nBasic Bot Trades (Detailed):', False, True)
+            await self.my_msg('*******\nBasic Bot Trades (Detailed):', to_tele=True)
             trades = self.bb_trades
         else:
-            await self.my_msg('*******\nAdvanced Bot Trades (Detailed):', False, True)
+            await self.my_msg('*******\nAdvanced Bot Trades (Detailed):', to_tele=True)
             trades = self.ab_trades
         if trades:
             for tr in self.bb_trades:
@@ -168,23 +160,22 @@ async def manage_input(self, msg):
                 msg += '\n- Stop Loss: ' + tr.stop_price + ' (-' + tr.stop_per + '%)'
                 msg += '\n- Trail Price: ' + tr.trail_price + ' (' + tr.trail_per + '%)'
                 msg += '\n- Last Updated: ' + tr.last_update
-                await self.my_msg(msg, False, True)
+                await self.my_msg(msg, to_tele=True)
         else:
-            await self.my_msg('No trades found. Use \'activate bb\' or \'activate ab\' to begin trading.', False, True)
+            await self.my_msg('No trades found. Use \'activate bb\' or \'activate ab\' to begin trading.', to_tele=True)
 
     elif msg in ['clear bb trades', 'clear ab trades']:
         await self.my_msg(
-            'About to Delete all Trade Data. This cannot be undone. Enter\'yes\' to continue.'
-            , False, False)
+            'About to Delete all Trade Data. This cannot be undone. Enter\'yes\' to continue.')
         msg = await ainput(">")
         if msg == 'yes':
             if 'bb' in msg:
                 self.bb_trades = []
             else:
                 self.ab_trades = []
-            await self.my_msg('Trades Deleted', False, False)
+            await self.my_msg('Trades Deleted')
         else:
-            await self.my_msg('Canceled', False, False)
+            await self.my_msg('Canceled')
 
     elif msg == 'save':
         await self.save()
@@ -192,7 +183,7 @@ async def manage_input(self, msg):
     elif msg == 'verbose':
         self.verbose = not self.verbose
         msg = 'Verbose: ' + str(self.verbose)
-        await self.my_msg(msg, False, False)
+        await self.my_msg(msg)
 
     elif msg in ['collect bb', 'collect ab']:
         per = 0
@@ -209,9 +200,9 @@ async def manage_input(self, msg):
                         per += float(tc['gl_per'])
                     num += 1
             msg = 'Collected ' + str(num) + ' trades for a Gain/Loss of ' + str(round(per, .11)) + '%'
-            await self.my_msg(msg, False, True)
+            await self.my_msg(msg, to_tele=True)
         else:
-            await self.my_msg('No Trades to Collect', False, True)
+            await self.my_msg('No Trades to Collect', to_tele=True)
 
         if 'bb' in msg:
             self.bb_trades = [tc for tc in self.bb_trades if not tc['sold']]

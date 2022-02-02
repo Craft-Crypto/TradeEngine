@@ -62,6 +62,16 @@ async def ws_v2(queue):
                 send_data = await get_api_data(True)
             elif data['action'] == 'msgs':
                 send_data = await get_msgs(True)
+
+            elif data['action'] == 'send_msg':
+                if engine_api.worker.tele_bot:
+                    if engine_api.worker.tele_bot.chat_id:
+                        try:
+                            await engine_api.worker.tele_bot.send_message(chat_id=engine_api.worker.tele_bot.chat_id,
+                                                                          text=data['msg'])
+                        except Exception as e:
+                            msg = 'WS Telegram posting msg Error: ' + str(e)
+                            await engine_api.worker.my_msg(msg, to_broad=True)
             elif data['action'] == 'get_strats':
                 store = get_store('BasicStrats')
                 send_data = {}
@@ -133,7 +143,7 @@ async def ws_v2(queue):
                     if key == 'Coinbase Pro':
                         ex.password = keys[key]['password']
 
-                engine_api.worker.test_apis()
+                await engine_api.worker.test_apis()
 
             elif data['action'] == 'set_tele_token':
                 # keys = ast.literal_eval(data['keys'])
@@ -301,7 +311,7 @@ async def get_msgs(*args):
     while not engine_api.worker.msg_q.empty():
         msg.append(engine_api.worker.msg_q.get())
     if args:
-        return msg
+        return {'msg': msg}
     return jsonify(msg)
     
 

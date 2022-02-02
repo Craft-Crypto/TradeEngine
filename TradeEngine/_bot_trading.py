@@ -142,7 +142,7 @@ async def make_bot_buy(self, card, *args):
 
     if not price:
         msg = kind + ' attempted to buy ' + cp + ' But no price has been recorded.'
-        await self.my_msg(msg, True, False)
+        await self.my_msg(msg, verbose=True, to_broad=True)
         card.buy_now = False
 
     num_coin_on_cost = min_cost_amt / price
@@ -151,7 +151,7 @@ async def make_bot_buy(self, card, *args):
 
     pair_bal = float(ex.balance[card.pair]) * .99
     msg = 'Balance Data for ' + cp + ': \nPair Balance: ' + str(pair_bal) + '\nMin Trade Amount: ' + str(min_cost_amt)
-    await self.my_msg(msg, True, False)
+    await self.my_msg(msg, verbose=True)
 
     if pair_bal > min_cost_amt:
         # get how much to buy
@@ -176,22 +176,22 @@ async def make_bot_buy(self, card, *args):
 
         if coin_amt:
             msg = 'Trade Data for ' + cp + ': \nCoin Amount: ' + str(coin_amt) + '\nPair Amount: ' + str(pair_amt)
-            await self.my_msg(msg, True, False)
+            await self.my_msg(msg, verbose=True)
 
             try:
                 ordr = await ex.create_market_buy_order(cp, coin_amt)
             except Exception as e:
                 if 'MIN_NOTIONAL' in str(e) or 'insufficient balance' in str(e) or '1013' in str(e):
                     msg = 'Trade Error: Too Low of trade amount. Trying to trade all...'
-                    await self.my_msg(msg, True, False)
+                    await self.my_msg(msg, verbose=True, to_broad=True)
                     ordr = await self.try_trade_all(cp, True)
                 else:
                     msg = kind + ' error in making buy of ' + cp + ': ' + str(e)
-                    await self.my_msg(msg, False, True)
+                    await self.my_msg(msg, to_tele=True, to_broad=True)
                     ordr = None
 
             msg = 'Order Details: ' + str(ordr)
-            await self.my_msg(msg, True, False)
+            await self.my_msg(msg, verbose=True)
             if ordr:
                 if is_float(ordr['average']):
                     pr = copy_prec(ordr['average'], '.11111111')
@@ -209,7 +209,7 @@ async def make_bot_buy(self, card, *args):
                 await self.add_trade_card(args, cp, card, pr, buy_amount)
 
                 msg = kind + ' bought ' + str(buy_amount) + ' ' + coin + ' at ' + str(pr) + ' ' + pair + '.'
-                await self.my_msg(msg, False, True)
+                await self.my_msg(msg, to_tele=True, to_broad=True)
                 await self.gather_update_bals(str(ex))
             elif not args:
                 card.active = False
@@ -218,7 +218,7 @@ async def make_bot_buy(self, card, *args):
 
         else:
             msg = '{0} insufficient balance to buy {1}. Attempted to buy {1} with {2} {3}.'.format(kind, cp, str(pair_bal), pair)
-            await self.my_msg(msg, False, True)
+            await self.my_msg(msg, to_tele=True, to_broad=True)
 
     # if not args:
     #     for old_card in self.ab_cards:
@@ -413,7 +413,7 @@ async def do_check_trade_sells(self, trades):
                 except Exception as e:
                     print('No balance for trade')
                     msg = tc.kind + ' ' + tc.coin + ' balance error: ' + str(e)
-                    await self.my_msg(msg, False, True)
+                    await self.my_msg(msg, to_tele=True, to_broad=True)
                     sell = False
                     tc.sell_now = False
 
@@ -432,22 +432,22 @@ async def do_check_trade_sells(self, trades):
                     sell_amt = float(ex.amount_to_precision(sym, sell_amt * self.sell_mod))
                     msg = 'Time to Sell ' + sym + '!\n Sell Price: ' + tc.take_profit_price + '\nCurrent Price: ' + \
                           tc.now_price + '\nBuy Price: ' + tc.buy_price
-                    await self.my_msg(msg, True, False)
+                    await self.my_msg(msg, verbose=True, to_broad=True)
                     try:
                         ordr = await ex.create_market_sell_order(sym, sell_amt)
                         await self.save()
                     except Exception as e:
                         if 'MIN_NOTIONAL' in str(e) or 'insufficient balance' in str(e) or '1013' in str(e):
                             msg = 'Trade Error: Too Low of trade amount. Trying to trade all...'
-                            await self.my_msg(msg, True, False)
+                            await self.my_msg(msg, verbose=True, to_broad=True)
                             ordr = await self.try_trade_all(sym, False, ex)
                         else:
                             msg = tc.kind + ' error in checking sell of ' + sym + ': ' + str(e)
                             ordr = None
-                            await self.my_msg(msg, False, True)
+                            await self.my_msg(msg, to_tele=True, to_broad=True)
 
                     msg = tc.kind + ' Order Details: ' + str(ordr)
-                    await self.my_msg(msg, True, False)
+                    await self.my_msg(msg, verbose=True)
                     if ordr:
                         if is_float(ordr['average']):
                             pr = copy_prec(ordr['average'], '.11111111')
@@ -462,7 +462,7 @@ async def do_check_trade_sells(self, trades):
                             sold_amount = sell_amt
 
                         msg = tc.kind + ' sold ' + str(sold_amount) + ' ' + tc.coin + ' at ' + str(pr) + ' ' + tc.pair
-                        await self.my_msg(msg, False, True)
+                        await self.my_msg(msg, to_tele=True, to_broad=True)
 
                         tc.sold = True
                         tc.sold_price = pr
@@ -485,7 +485,7 @@ async def do_check_trade_sells(self, trades):
         except Exception as e:
             print('sell error', e)
             msg = 'Error in checking ' + tc.kind + ' sell of ' + sym + ': ' + str(e)
-            await self.my_msg(msg, False, True)
+            await self.my_msg(msg, to_tele=True, to_broad=True)
             tc.sell_now = False
             tc.active = False
             tc.sold_price = '0'
@@ -501,14 +501,14 @@ async def quick_trade(self, *args):
         cp = None
         amount = None
         if not args:
-            await self.my_msg('*******', False, False)
-            await self.my_msg('Select an Exchange to Trade:', False, False)
-            await self.my_msg('1 - Binance', False, False)
-            await self.my_msg('2 - Binance US', False, False)
-            await self.my_msg('3 - BitMEX', False, False)
-            await self.my_msg('4 - Coinbase Pro', False, False)
-            await self.my_msg('5 - FTX', False, False)
-            await self.my_msg('6 - Kraken', False, False)
+            await self.my_msg('*******')
+            await self.my_msg('Select an Exchange to Trade:')
+            await self.my_msg('1 - Binance')
+            await self.my_msg('2 - Binance US')
+            await self.my_msg('3 - BitMEX')
+            await self.my_msg('4 - Coinbase Pro')
+            await self.my_msg('5 - FTX')
+            await self.my_msg('6 - Kraken')
             msg = await ainput(">")
             ex = ''
             if msg == '1':
@@ -526,21 +526,21 @@ async def quick_trade(self, *args):
             try:
                 ex = self.exchange_selector(ex)
             except Exception as e:
-                await self.my_msg('Error in Exchange Selection', False, False)
+                await self.my_msg('Error in Exchange Selection')
                 return
 
-            await self.my_msg('Enter \'buy\' or \'sell\'', False, False)
+            await self.my_msg('Enter \'buy\' or \'sell\'')
             msg = await ainput(">")
             if msg.upper().strip() == 'buy':
                 kind = 'buy'
             else:
                 kind = 'sell'
 
-            await self.my_msg('Enter a Coin/Pair to trade (Example: BTC/USDT)', False, False)
+            await self.my_msg('Enter a Coin/Pair to trade (Example: BTC/USDT)')
             msg = await ainput(">")
             cp = msg.strip().upper()
 
-            await self.my_msg('Choose a % to trade (Example: 5, 10, 50, 75, 100....):', False, False)
+            await self.my_msg('Choose a % to trade (Example: 5, 10, 50, 75, 100....):')
             msg = await ainput(">")
             amount = msg.strip().strip('%')
 
@@ -566,7 +566,7 @@ async def quick_trade(self, *args):
 
         if not price:
             msg = 'Attempted to Quick Trade ' + cp + ' But no price has been recorded.'
-            await self.my_msg(msg, True, False)
+            await self.my_msg(msg, verbose=True)
         else:
             try:
                 if kind == 'buy':
@@ -575,12 +575,12 @@ async def quick_trade(self, *args):
                     ordr = await ex.create_market_sell_order(cp, amount)
             except Exception as e:
                     msg = 'Error in Quick Trade of ' + cp + ': ' + str(e)
-                    await self.my_msg(msg, False, True)
+                    await self.my_msg(msg, to_tele=True, to_broad=True)
                     ordr = None
                     self.pause_msg = False
 
             msg = 'Quick Trade Order Details: ' + str(ordr)
-            await self.my_msg(msg, True, False)
+            await self.my_msg(msg, verbose=True)
             if ordr:
                 if is_float(ordr['average']):
                     pr = copy_prec(ordr['average'], '.11111111')
@@ -597,7 +597,7 @@ async def quick_trade(self, *args):
                 else:
                     msg = 'Sold ' + str(amount) + ' ' + cp + ' at ' + str(pr) + '.'
 
-                await self.my_msg(msg, False, True)
+                await self.my_msg(msg, to_tele=True, to_broad=True)
                 await self.gather_update_bals()
 
     except Exception as e:
@@ -605,8 +605,8 @@ async def quick_trade(self, *args):
         if 'MIN_NOTIONAL' in str(e) or 'insufficient balance' in str(e) or '1013' in str(e):
             # print('too low')
             msg = 'Quick Trade Amount too low for Exchange.'
-            await self.my_msg(msg, False, True)
+            await self.my_msg(msg, to_tele=True, to_broad=True)
         else:
             msg = 'Error in Quick Trade ' + cp + ': ' + str(e)
-            await self.my_msg(msg, False, True)
+            await self.my_msg(msg, to_tele=True, to_broad=True)
 
