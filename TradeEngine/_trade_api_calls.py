@@ -156,7 +156,6 @@ async def ws_v2(queue):
                         send_data = await get_ab_data(True)
                         break
 
-
             elif data['action'] == 'toggle_card_active':
                 for card in engine_api.worker.bb_cards:
                     if card.my_id == data['my_id']:
@@ -352,7 +351,7 @@ async def set_api_data():
         ex.apiKey = data[dd]['key'] 
         ex.secret = data[dd]['secret'] 
         if dd == 'Coinbase Pro':
-                ex.password = data[dd]['password'] 
+            ex.password = data[dd]['password']
         
         # except Exception as e:
         #     await engine_api.worker.my_msg('Error in posting API data ' + exchange, False, False)
