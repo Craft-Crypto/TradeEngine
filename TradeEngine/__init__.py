@@ -43,6 +43,8 @@ class TradeEngine(object):
 
         # Setup Basic Bot
         self.bb_strat = BaseRecord()
+        self.bb_strat.pair_minmult = '2'
+        self.bb_strat.title = 'RSI DCA Minute Trading'
         self.bb_cards = []
         self.bb_trades = []
         self.bb_active_trades = '0'
@@ -115,7 +117,6 @@ class TradeEngine(object):
             print(text)
 
         if to_broad:
-            print('broadcasting')
             await broadcast({'action': 'msgs', 'msg': text})
 
         if to_tele and self.tele_bot:
@@ -195,6 +196,8 @@ class TradeEngine(object):
         await self.my_msg('Enter a Pair Min Multiplier:')
         msg = await ainput(">")
         self.bb_strat.pair_minmult = msg
+        for card in self.bb_cards:
+            card.pair_minmult = self.bb_strat.pair_minmult
 
         await self.my_msg('Enter Active Trade Limit:')
         msg = await ainput(">")
@@ -232,11 +235,13 @@ class TradeEngine(object):
                 if filter_stable and coin.split('/')[0] in stable_coins:
                     pass
                 else:
-                    self.bb_strat.coin += coin.split('/')[0] + ', '
+                    if ex.market(coin)['active']:
+                        self.bb_strat.coin += coin.split('/')[0] + ', '
+
         if self.bb_strat.coin:
             self.bb_strat.coin = self.bb_strat.coin[:-2]
 
-        # Resetting and making coins
+        # Resetting and making coin cards
         self.bb_cards = []
         for coin in self.bb_strat.coin.split(','):
             coin = coin.strip()
@@ -248,9 +253,16 @@ class TradeEngine(object):
             rec.title = ''
             rec.description = ''
             rec.my_id = str(time.time())
+
+            ex_prec = ex.price_to_precision(coin + '/' + pair, '.11111111111')
+            extended_prec = ex_prec + '11'
+            rec.precision = extended_prec
+            if not ex_prec:
+                rec.precision = '.11111111'
             self.bb_cards.append(rec)
 
         await self.gather_update_bals()
+        await self.sync_trades_to_cards()
 
         return True
 
@@ -326,6 +338,45 @@ class TradeEngine(object):
             self.a_cbp.rate_limit = 3
             self.a_kraken.rate_limit = 1
             self.a_ftx.rate_limit = 29
+
+    async def collect_sells(self, basic, to_tcp=False, *args):
+        per = 0
+        num = 0
+        if basic:
+            trades = self.bb_trades
+        else:
+            trades = self.ab_trades
+
+        if trades:
+            for tc in trades:
+                if tc.sold:
+                    if is_float(tc.gl_per):
+                        per += float(tc.gl_per)
+                    num += 1
+            print(num, per)
+            msg = 'Collected ' + str(num) + ' trades for a Gain/Loss of ' + str(copy_prec(per, .11)) + '%'
+        else:
+            msg = 'No Trades to Collect'
+
+        await self.my_msg(msg, to_tele=True)
+
+        if to_tcp:
+            await broadcast({'action': 'collected', 'msg': msg})
+
+        if basic:
+            self.bb_trades = [tc for tc in trades if not tc.sold]
+        else:
+            self.ab_trades = [tc for tc in trades if not tc.sold]
+
+    async def make_positive_sells(self, basic, *args):
+        if basic:
+            trades = self.bb_trades
+        else:
+            trades = self.ab_trades
+
+        for tc in trades:
+            if not tc.sold and tc.active and float(tc.gl_per) > 0:
+                tc.sell_now = True
 
     async def update_bals(self, exchange):
         t = time.time()
@@ -620,7 +671,7 @@ class TradeEngine(object):
                         msg = 'Sell order of ' + str(amount) + ' ' + coin + ' at ' + str(pr) + ' ' + cp + ' sent.'
 
                 if reset:
-                    await self.out_q.coro_put(['msg', msg])
+                    await self.my_msg(msg, to_tele=True, to_broad=True)
                     await self.gather_update_bals()
             else:
                 pr = None
@@ -630,7 +681,7 @@ class TradeEngine(object):
 
         except Exception as e:
             msg = 'Error in trading ' + cp + ': ' + str(e)
-            await self.out_q.coro_put(['msg', msg])
+            await self.my_msg(msg, to_tele=True, to_broad=True)
             return None, '0'
 
     async def limit_buy_sell_now(self, exchange, cp, buy, amount, price, leverage, *args):
@@ -680,7 +731,7 @@ class TradeEngine(object):
                     print('limit order', cp, buy, e)
                     ordr = None
                     msg = cp + ' Loop Limit Order Error: ' + str(e)
-                    await self.out_q.coro_put(['msg', msg])
+                    await self.my_msg(msg, to_tele=True, to_broad=True)
                     return None
 
             print(ordr)
@@ -692,7 +743,7 @@ class TradeEngine(object):
                 else:
                     msg = 'Placed Limit Sell of ' + str(amount) + ' ' + coin + ' at ' + str(price) + ' ' + cp
 
-                await self.out_q.coro_put(['msg', msg])
+                await self.my_msg(msg, to_tele=True, to_broad=True)
                 await self.gather_update_bals(str(ex))
             else:
                 trade_id = None
@@ -702,7 +753,7 @@ class TradeEngine(object):
 
         except Exception as e:
             msg = 'Error in Loop trading ' + cp + ': ' + str(e)
-            await self.out_q.coro_put(['msg', msg])
+            await self.my_msg(msg, to_tele=True, to_broad=True)
             return None
 
     async def try_trade_all(self, ex, cp, buy, *args):
@@ -716,7 +767,7 @@ class TradeEngine(object):
                 pair_bal = ex.balance[pair]
             except Exception as e:
                 msg = 'Error in Trading ' + cp + ': No Balance Found.'
-                await self.out_q.coro_put(['msg', msg])
+                await self.my_msg(msg, to_tele=True, to_broad=True)
                 return None
 
             if buy:
@@ -771,10 +822,11 @@ class TradeEngine(object):
                     msg = 'Insufficient balance of ' + cp + '. Attempted to buy ' + str(amount) + ' ' + coin + ' with ' + str(pair_bal) + ' ' + pair + '.'
                 else:
                     msg = 'Insufficient balance of ' + cp + '. Attempted to sell ' + str(amount) + ' ' + coin + '.'
-                await self.out_q.coro_put(['msg', msg])
+                await self.my_msg(msg, to_tele=True, to_broad=True)
             else:
+                print(cp, e)
                 msg = 'Error in Trade Catch ' + cp + ': ' + str(e)
-                await self.out_q.coro_put(['msg', msg])
+                await self.my_msg(msg, to_tele=True, to_broad=True)
             return None
 
     async def get_my_id(self):
@@ -825,3 +877,64 @@ class TradeEngine(object):
 
         msg = 'Saved Data.'
         await self.my_msg(msg, verbose=True)
+
+    async def sync_trades_to_cards(self):
+        try:
+            for tc in self.bb_trades + self.ab_trades:
+                if not tc.sold:
+                    # hunt down card
+                    for cc in self.bb_cards + self.ab_cards:
+                        if (tc.coin == cc.coin and tc.pair == cc.pair and
+                                tc.exchange == cc.exchange and tc.kind == cc.kind):
+                            # found it
+                            ex = self.exchange_selector(tc.exchange)
+                            tc.precision = cc.precision
+                            tc.take_profit_per = cc.take_profit_per
+                            tc.trail_per = cc.trail_per
+                            tc.stop_per = cc.stop_per
+                            tc.dca_buyback_per = cc.dca_buyback_per
+                            # print('cc', cc.coin, cc.pair, cc.take_profit_per, cc.trail_per, cc.stop_per, cc.dca_buyback_per)
+                            # print(self.bb_strat.take_profit_per)
+                            # print('found card and trade')
+                            my_trades = []
+                            reset = False
+                            mid = 0
+                            vol = 0
+                            min_buy = 0
+                            for child in tc.childs:
+                                # Now tally up children
+                                mid += float(child['buy_price']) * float(child['amount'])
+                                vol += float(child['amount'])
+                                if not min_buy > 0 or float(child['buy_price']) < min_buy:
+                                    min_buy = float(child['buy_price'])
+
+                            if vol:
+                                avg_price = mid / vol
+                                tc.trade_amount = copy_prec(vol, cc.precision)
+                                tc.buy_price = copy_prec(avg_price, cc.precision)
+
+                            if is_float(cc.dca_buyback_per):
+                                buyback = min_buy * (1 - float(cc.dca_buyback_per) / 100)
+                                tc.dca_buyback_price = copy_prec(buyback, cc.precision)
+                            else:
+                                tc.dca_buyback_price = ''
+
+                            if is_float(cc.take_profit_per):
+                                sell = float(tc.buy_price) * (100 + float(cc.take_profit_per)) / 100
+                                tc.take_profit_price = copy_prec(sell, cc.precision)
+                            else:
+                                tc.take_profit_price = ''
+
+                            if is_float(cc.stop_per):
+                                stop = float(tc.buy_price) * (100 - float(cc.stop_per)) / 100
+                                tc.stop_price = copy_prec(stop, cc.precision)
+                            else:
+                                tc.stop_price = ''
+
+                            break
+        except Exception as e:
+            print('average calculation', e)
+            await self.my_msg('Error in DCA Averages Calculations for ' + tc.coin + '/' + tc.pair,
+                              to_tele=True, to_broad=True)
+            cc.active = False
+            tc.active = False

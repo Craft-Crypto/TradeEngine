@@ -6,7 +6,7 @@ import time
 import ccxt.async_support as a_ccxt
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
-from CraftCrypto_Helpers.Helpers import get_store, save_store
+from CraftCrypto_Helpers.Helpers import get_store, save_store, archive_store, delete_store
 from TradeEngine._tele_api_calls import TeleBot
 from TradeEngine._trade_api_calls import engine_api
 from CraftCrypto_Helpers.BaseRecord import BaseRecord, convert_record
@@ -85,7 +85,7 @@ async def initialize(self):
                              'initiate buys. It then looks for quick profit opportunities, and chances to ' +
                              'Down Cost Average on the dips.')
         strat.candle = "1m"
-        strat.sell_per = "2"
+        strat.take_profit_per = "2"
         strat.trail_per = ".5"
         strat.dca_buyback_per = "10"
         strat.rsi_buy = "30"
@@ -97,7 +97,7 @@ async def initialize(self):
                               'be in the red, with a Stoch under 30, and keeps a moderate take profit, stop ' +
                               'loss, and trail.')
         strat1.candle = "4h"
-        strat1.sell_per = "10"
+        strat1.take_profit_per = "10"
         strat1.trail_per = "1"
         strat1.stop_per = "20"
         strat1.macd_cross_buy = "Yes"
@@ -110,7 +110,7 @@ async def initialize(self):
                               'Down Cost Averaging is a great way to earning profit off a volatile market in ' +
                               'the 5 minute candle.')
         strat2.candle = "5m"
-        strat2.sell_per = "2"
+        strat2.take_profit_per = "2"
         strat2.trail_per = ".5"
         strat2.dca_buyback_per = "10"
         strat2.sma_cross_fast = "17"
@@ -130,12 +130,18 @@ async def initialize(self):
     if store:
         for cc in store['trades']:
             new_rec = convert_record(cc)
+            new_rec.kind = 'Basic Bot'
             self.bb_trades.append(new_rec)
+        archive_store('LiteBot')
+        await self.update_strat('Binance', '1', 'USD', True)
+        self.bb_strat.pair_minmult = '2'
+        await self.save()
     else:
+        delete_store('LiteBot')
         store = get_store('BasicBot')
         if store:
             try:
-                self.bb.set_record(store['bb_strat'])
+                self.bb_strat.set_record(store['bb_strat'])
                 for cc in store['bb_cards']:
                     rec = BaseRecord()
                     rec.set_record(cc)
@@ -218,6 +224,7 @@ async def initialize(self):
 
     #
     self.sched.add_job(self.gather_update_bals, trigger=t1)
+    self.sched.add_job(self.save, trigger=t1)
     #
 
     # Set up server

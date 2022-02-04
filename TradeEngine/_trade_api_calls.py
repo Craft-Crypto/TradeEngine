@@ -56,13 +56,13 @@ async def ws_v2(queue):
                 await engine_api.worker.check_bot_cards(engine_api.worker.bb_strat.candle)
                 data['action'] = 'bb_data'
                 send_data = await get_bb_data(True)
+
             elif data['action'] == 'ab_data':
                 send_data = await get_ab_data(True)
             elif data['action'] == 'api_keys':
                 send_data = await get_api_data(True)
             elif data['action'] == 'msgs':
                 send_data = await get_msgs(True)
-
             elif data['action'] == 'send_msg':
                 if engine_api.worker.tele_bot:
                     if engine_api.worker.tele_bot.chat_id:
@@ -88,6 +88,8 @@ async def ws_v2(queue):
                 await engine_api.worker.update_strat(ex, index, pair, True)
                 engine_api.worker.bb_trade_limit = data['sent_data']['limit']
                 engine_api.worker.bb_strat.pair_minmult = data['sent_data']['pair_minmult']
+                for card in engine_api.worker.bb_cards:
+                    card.pair_minmult = engine_api.worker.bb_strat.pair_minmult
                 data['action'] = 'bb_data'
                 send_data = await get_bb_data(True)
 
@@ -107,17 +109,53 @@ async def ws_v2(queue):
                 data['action'] = 'bb_data'
                 send_data = await get_bb_data(True)
 
+            elif data['action'] == 'delete_trade':
+                i = 0
+                for card in engine_api.worker.bb_trades:
+                    if card.my_id == data['my_id']:
+                        del engine_api.worker.bb_trades[i]
+                        break
+                    i += 1
+                i = 0
+                for card in engine_api.worker.ab_trades:
+                    if card['my_id'] == data['my_id']:
+                        del engine_api.worker.ab_trades[card]
+                        break
+                    i += 1
+                data['action'] = 'bb_data'
+                send_data = await get_bb_data(True)
+
+            elif data['action'] == 'sell_now':
+                i = 0
+                for card in engine_api.worker.bb_trades:
+                    if card.my_id == data['my_id']:
+                        card.sell_now = True
+                        await engine_api.worker.do_check_trade_sells(engine_api.worker.bb_trades)
+                        break
+                    i += 1
+                i = 0
+                for card in engine_api.worker.ab_trades:
+                    if card['my_id'] == data['my_id']:
+                        card.sell_now = True
+                        await engine_api.worker.do_check_trade_sells(engine_api.worker.ab_trades)
+                        break
+                    i += 1
+
             elif data['action'] == 'buy_card':
                 for card in engine_api.worker.bb_cards:
                     if card.my_id == data['my_id']:
-                        card.buy_now = True
+                        # card.buy_now = True
+                        await engine_api.worker.make_bot_buy(card)
+                        data['action'] = 'bb_data'
+                        send_data = await get_bb_data(True)
                         break
                 for card in engine_api.worker.ab_cards:
                     if card.my_id == data['my_id']:
-                        card.buy_now = True
+                        await engine_api.worker.make_bot_buy(card)
+                        data['action'] = 'ab_data'
+                        send_data = await get_ab_data(True)
                         break
-                data['action'] = 'bb_data'
-                send_data = await get_bb_data(True)
+
 
             elif data['action'] == 'toggle_card_active':
                 for card in engine_api.worker.bb_cards:
@@ -128,8 +166,26 @@ async def ws_v2(queue):
                     if card.my_id == data['my_id']:
                         card.active = not card.active
                         break
-                data['action'] == 'bb_data'
+                data['action'] = 'bb_data'
                 send_data = await get_bb_data(True)
+
+            elif data['action'] == 'pause_play_all':
+                if data['basic']:
+                    for card in engine_api.worker.bb_cards:
+                        if data['pause']:
+                            card.active = False
+                        else:
+                            card.active = True
+                    data['action'] = 'bb_data'
+                    send_data = await get_bb_data(True)
+                else:
+                    for card in engine_api.worker.ab_cards:
+                        if data['pause']:
+                            card.active = False
+                        else:
+                            card.active = True
+                    data['action'] = 'ab_data'
+                    send_data = await get_ab_data(True)
 
             elif data['action'] == 'set_api_keys':
                 # keys = ast.literal_eval(data['keys'])
@@ -156,6 +212,18 @@ async def ws_v2(queue):
                 # keys = ast.literal_eval(data['keys'])
                 if engine_api.worker.tele_bot:
                     await engine_api.worker.init_tele_bot(engine_api.worker.tele_bot.token, data['chat_id'])
+
+            elif data['action'] == 'collect_sells':
+                await engine_api.worker.collect_sells(data['basic'], to_tcp=True)
+                if data['basic']:
+                    data['action'] = 'bb_data'
+                    send_data = await get_bb_data(True)
+                else:
+                    data['action'] = 'ab_data'
+                    send_data = await get_ab_data(True)
+
+            elif data['action'] == 'make_positive_sells':
+                await engine_api.worker.make_positive_sells(data['basic'])
 
 
             if send_data:

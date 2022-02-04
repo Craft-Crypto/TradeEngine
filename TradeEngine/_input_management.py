@@ -156,7 +156,7 @@ async def manage_input(self, msg):
                     msg += '\n- Current Price: ' + tr.now_price
                 msg += '\n- Take Profit: ' + tr.sell_price + ' (' + tr.sell_per + '%)'
                 msg += '\n- Average Buy Price: ' + tr.buy_price
-                msg += '\n- DCA Price: ' + tr.buyback_price + ' (-' + tr.dca_buyback_per + '%)'
+                msg += '\n- DCA Price: ' + tr.dca_buyback_price + ' (-' + tr.dca_buyback_per + '%)'
                 msg += '\n- Stop Loss: ' + tr.stop_price + ' (-' + tr.stop_per + '%)'
                 msg += '\n- Trail Price: ' + tr.trail_price + ' (' + tr.trail_per + '%)'
                 msg += '\n- Last Updated: ' + tr.last_update
@@ -186,28 +186,16 @@ async def manage_input(self, msg):
         await self.my_msg(msg)
 
     elif msg in ['collect bb', 'collect ab']:
-        per = 0
-        num = 0
-        trades = []
         if 'bb' in msg:
-            trades = self.bb_trades
+            self.collect_sells(True)
         else:
-            trades = self.ab_trades
-        if trades:
-            for tc in self.trades:
-                if tc['sold']:
-                    if is_float(tc['gl_per']):
-                        per += float(tc['gl_per'])
-                    num += 1
-            msg = 'Collected ' + str(num) + ' trades for a Gain/Loss of ' + str(round(per, .11)) + '%'
-            await self.my_msg(msg, to_tele=True)
-        else:
-            await self.my_msg('No Trades to Collect', to_tele=True)
+            self.collect_sells(False)
 
+    elif msg in ['sell positive bb', 'sell positive ab']:
         if 'bb' in msg:
-            self.bb_trades = [tc for tc in self.bb_trades if not tc['sold']]
+            self.make_positive_sells(True)
         else:
-            self.ab_trades = [tc for tc in self.ab_trades if not tc['sold']]
+            self.make_positive_sells(False)
 
     elif msg == 'balance':
         await self.collect_balance()
