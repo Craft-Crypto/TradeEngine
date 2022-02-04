@@ -487,6 +487,7 @@ class TradeEngine(object):
                     ex.balance['btc_val'] = btc_bal
                     ex.balance['usd_val'] = usd_bal
                     ex.balance['update_time'] = time.strftime('%I:%M:%S %p %m/%d/%y')
+                    await broadcast({'action': 'get_balance', 'exchange': str(ex), 'balance': ex.balance})
 
                 except Exception as e:
                     msg = 'Error in ' + str(ex) + ' balance update: ' + str(e)
@@ -614,29 +615,38 @@ class TradeEngine(object):
                 break
         return ohlc
 
-    async def buy_sell_now(self, ex, cp, amount, buy, reset, *args):
+    async def buy_sell_now(self, ex, cp, amount, buy, reset, percent=False, *args):
         try:
             # ex = self.exchange_selector(exchange)
+            if type(ex) == str:
+                ex = self.exchange_selector(ex)
             await self.a_debit_exchange(ex, 1)
+            price = float(ex.prices[cp.replace('/', '')])
+            coin, pair = cp.split('/')
+            if percent:
+                # amount is percent of amount to sell
+                if buy:
+                    amount = float(ex.balance[pair]) / price * float(amount) / 100
+                else:
+                    amount = float(ex.balance[coin]) * float(amount) / 100
 
-            print('pre', cp, amount, buy)
+            # print('pre', cp, amount, buy)
             amount = float(amount)
             info = ex.market(cp)
             min_coin_amt = float(info['limits']['amount']['min'])
             min_cost_amt = float(info['limits']['cost']['min'])
-            price = float(ex.prices[cp.replace('/', '')])
+
             num_coin_on_cost = min_cost_amt / price
             while num_coin_on_cost > min_coin_amt:
                 min_coin_amt += float(info['limits']['amount']['min'])
-            print('pre mins', min_coin_amt, num_coin_on_cost)
+            # print('pre mins', min_coin_amt, num_coin_on_cost)
 
             if amount < min_coin_amt:
                 amount = min_coin_amt
 
             amount = ex.amount_to_precision(cp, amount)
-            print('post amounts', amount, 'buy', buy)
+            # print('post amounts', amount, 'buy', buy)
 
-            coin, pair = cp.split('/')
             try:
                 if buy:
                     ordr = await ex.create_market_buy_order(cp, amount)
@@ -644,12 +654,12 @@ class TradeEngine(object):
                     ordr = await ex.create_market_sell_order(cp, amount)
             except Exception as e:
                 if 'MIN_NOTIONAL' in str(e) or 'insufficient balance' in str(e) or '1013' in str(e):
-                    print(cp, buy, e)
+                    # print(cp, buy, e)
                     ordr = await self.try_trade_all(ex, cp, buy)
                 else:
                     ordr = None
 
-            print(ordr)
+            # print(ordr)
             if ordr:
                 if is_float(ordr['average']):
                     pr = copy_prec(ordr['average'], '.11111111')

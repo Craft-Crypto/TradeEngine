@@ -134,7 +134,7 @@ class TeleBot(Bot):
 
         @self.dp.message_handler(state=BuySellState.coinpair)
         async def tele_trade_coinpair(message: types.Message, state: FSMContext):
-            await state.update_data(coinpair=message.text)
+            await state.update_data(coinpair=message.text.upper())
 
             await BuySellState.next()
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True, selective=True)
@@ -166,17 +166,12 @@ class TeleBot(Bot):
             if message.text == 'Confirm Trade':
                 try:
                     async with state.proxy() as data:
-                        cp = data['coinpair'].split('/')
-                        if data['kind']:
-                            await self.worker.in_q.coro_put(['quick_buy', data['exchange'], cp[1],
-                                                                 data['coinpair'], data['amount']])
-                        else:
-                            await self.worker.in_q.coro_put(['quick_sell', data['exchange'], cp[1],
-                                                                 data['coinpair'], data['amount']])
+                        await self.worker.buy_sell_now(data['exchange'], data['coinpair'], data['amount'],
+                                                       data['kind'], True, percent=True)
 
                         await state.finish()
                         markup = types.ReplyKeyboardRemove()
-                        await message.reply('Trade Entered', reply_markup=markup)
+                        # await message.reply('Trade Entered', reply_markup=markup)
                 except Exception as e:
                     print('error telegram', e)
             else:

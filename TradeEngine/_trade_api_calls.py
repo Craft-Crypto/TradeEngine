@@ -224,6 +224,22 @@ async def ws_v2(queue):
             elif data['action'] == 'make_positive_sells':
                 await engine_api.worker.make_positive_sells(data['basic'])
 
+            elif data['action'] == 'get_balance':
+                await engine_api.worker.gather_update_bals()
+                ex = engine_api.worker.exchange_selector(data['exchange'])
+                send_data = {'balance': ex.balance}
+
+            elif data['action'] == 'reload':
+                ex = engine_api.worker.exchange_selector(data['exchange'])
+                await ex.load_markets(reload=True)
+                await engine_api.worker.gather_update_bals()
+                send_data = {'pairs': ex.markets()}
+
+            elif data['action'] == 'buy_sell_now':
+                await engine_api.worker.buy_sell_now(data['exchange'], data['cp'], data['amount'], data['buy'],
+                                               True, percent=data['percent'])
+                await engine_api.worker.gather_update_bals()
+
 
             if send_data:
                 try:
