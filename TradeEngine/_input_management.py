@@ -82,6 +82,10 @@ async def manage_input(self, msg):
         for card in self.bb_cards:
             print(card)
 
+    elif msg == 'ab card status':
+        for card in self.ab_cards:
+            print(card)
+
     elif msg == 'bb status':
         msg = '*******'
         msg += 'Basic Bot Status:'

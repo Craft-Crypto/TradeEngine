@@ -266,6 +266,64 @@ class TradeEngine(object):
 
         return True
 
+    async def add_ab_card(self, coins, base, trigs):
+        print('Engine Getting', coins)
+        # cont = self.addition_dialog.content_cls
+        # trig = self.addition_dialog.content_cls.ids.trig
+        # pair = cont.pair
+        # candle = cont.candle
+        exchange = base['exchange']
+        ex = self.exchange_selector(exchange)
+        pair = base['pair']
+
+        if '*' in coins:
+            coins = [cp.split('/')[0] for cp in ex.markets if pair in cp and ex.market(cp)['active']]
+            print('Trading Engine Coins')
+
+        for coin in coins:
+            found_rec = False
+            for rec in self.ab_cards:
+                if rec.coin == coin and rec.pair == pair:
+                    print(rec.my_id)
+                    my_id = rec.my_id
+                    rec.set_record(trigs)
+                    rec.set_record(base)
+                    rec.my_id = my_id
+                    print(rec.my_id)
+                    # found_rec = True
+                    print('FOUND rec', rec.coin, rec.pair)
+                    # rec.reset('now_price', 'coin', 'pair', 'coin_bal', 'pair_bal', 'sim_gain', 'sim_trades', 'sim_date',
+                    #          'per_gain', 'num_trades', 'last_price', 'last_buy_price', 'trade_vol', 'trade_price',
+                    #          'candle', 'prec', 'ready_sell')
+                    # rec.set_record(cont.get_base())
+                    # rec.set_record(trig.get_trigs())
+                    # rec.my_id = my_id
+                    rec.coin = coin
+                    rec.pair = pair
+                    rec.ready_sell = False
+                    rec.active = True
+                    # self.update_data(self.ids.rv, rec.get_all())
+                    found_rec = True
+                    await broadcast({'action': 'update_cc', 'card': rec.to_dict()})
+                    break
+
+            if not found_rec:
+                rec = BaseRecord()
+                #set dicts
+                print('resetting dict')
+                rec.set_record(trigs)
+                rec.set_record(base)
+                rec.kind = 'Advanced Bot'
+                rec.coin = coin
+                rec.my_id = await self.get_my_id()
+                rec.ready_sell = False
+                rec.active = True
+                self.ab_cards.append(rec)
+                print(rec)
+                print(rec.to_dict())
+                await broadcast({'action': 'update_cc', 'card': rec.to_dict()})
+        await self.sync_trades_to_cards()
+
     async def set_api_keys(self):
         await self.my_msg('*******')
         await self.my_msg('Select an Exchange to add keys:')
@@ -601,7 +659,7 @@ class TradeEngine(object):
                 return None
 
             while len(ohlc) < int(candles_needed):
-                print('getting more ohlc', len(ohlc))
+                # print('getting more ohlc', len(ohlc))
                 new_ohlc = []
                 await self.a_debit_exchange(ex, 1)
                 if str(ex) == 'Coinbase Pro':
@@ -618,7 +676,7 @@ class TradeEngine(object):
                 else:
                     break
 
-            print('time took', time.time() - t)
+            # print('time took', time.time() - t)
             return ohlc
 
         except Exception as e:
@@ -911,6 +969,7 @@ class TradeEngine(object):
         try:
             for tc in self.bb_trades + self.ab_trades:
                 if not tc.sold:
+                    update = False
                     # hunt down card
                     for cc in self.bb_cards + self.ab_cards:
                         if (tc.coin == cc.coin and tc.pair == cc.pair and
@@ -959,8 +1018,9 @@ class TradeEngine(object):
                                 tc.stop_price = copy_prec(stop, cc.precision)
                             else:
                                 tc.stop_price = ''
-
                             break
+
+
         except Exception as e:
             print('average calculation', e)
             await self.my_msg('Error in DCA Averages Calculations for ' + tc.coin + '/' + tc.pair,

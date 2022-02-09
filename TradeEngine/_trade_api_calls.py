@@ -58,8 +58,22 @@ async def ws_v2(queue):
                 data['action'] = 'bb_data'
                 send_data = await get_bb_data(True)
 
+            elif data['action'] == 'ab_active':
+                await set_ab_active()
+                data['action'] = 'ab_data'
+                send_data = await get_ab_data(True)
+
+            elif data['action'] == 'ab_now':
+                engine_api.worker.ab_active = True
+                # await engine_api.worker.check_bot_cards(engine_api.worker.bb_strat.candle)
+                data['action'] = 'ab_data'
+                send_data = await get_ab_data(True)
+
             elif data['action'] == 'ab_data':
                 send_data = await get_ab_data(True)
+            elif data['action'] == 'add_ab_data':
+                await engine_api.worker.add_ab_card(data['coins'], data['base'], data['trigs'])
+
             elif data['action'] == 'api_keys':
                 send_data = await get_api_data(True)
             elif data['action'] == 'msgs':
@@ -99,16 +113,20 @@ async def ws_v2(queue):
                 for card in engine_api.worker.bb_cards:
                     if card.my_id == data['my_id']:
                         del engine_api.worker.bb_cards[i]
+                        data['action'] = 'bb_data'
+                        send_data = await get_bb_data(True)
+                        print('hereeeee')
                         break
                     i += 1
                 i = 0
                 for card in engine_api.worker.ab_cards:
-                    if card['my_id'] == data['my_id']:
-                        del engine_api.worker.ab_cards[card]
+                    if card.my_id == data['my_id']:
+                        del engine_api.worker.ab_cards[i]
+                        data['action'] = 'ab_data'
+                        send_data = await get_ab_data(True)
                         break
                     i += 1
-                data['action'] = 'bb_data'
-                send_data = await get_bb_data(True)
+                print(data, send_data)
 
             elif data['action'] == 'delete_trade':
                 i = 0
@@ -231,6 +249,7 @@ async def ws_v2(queue):
                 send_data = {'balance': ex.balance}
 
             elif data['action'] == 'reload':
+                print('reload ex', data['exchange'])
                 ex = engine_api.worker.exchange_selector(data['exchange'])
                 await ex.load_markets(reload=True)
                 await engine_api.worker.gather_update_bals()
@@ -316,9 +335,14 @@ async def get_bb_data(*args):
 @engine_api.route(pfx + '/bb_active', methods=['GET'])
 async def set_bb_active():
     engine_api.worker.bb_active = not engine_api.worker.bb_active
-    print('flipped')
+    print('flipped bb')
     return 'flipped'
 
+@engine_api.route(pfx + '/ab_active', methods=['GET'])
+async def set_ab_active():
+    engine_api.worker.ab_active = not engine_api.worker.ab_active
+    print('flipped ab')
+    return 'flipped'
 
 @engine_api.route(pfx + '/ab_data', methods=['GET'])
 async def get_ab_data(*args):
