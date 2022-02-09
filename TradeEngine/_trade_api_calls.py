@@ -233,19 +233,23 @@ async def ws_v2(queue):
                 ex = engine_api.worker.exchange_selector(data['exchange'])
                 await ex.load_markets(reload=True)
                 await engine_api.worker.gather_update_bals()
-                send_data = {'pairs': ex.markets()}
+                pairs = [cp for cp in ex.markets]
+                send_data = {'pairs': pairs}
 
             elif data['action'] == 'buy_sell_now':
                 await engine_api.worker.buy_sell_now(data['exchange'], data['cp'], data['amount'], data['buy'],
                                                True, percent=data['percent'])
                 await engine_api.worker.gather_update_bals()
 
+            elif data['action'] == 'get_trades':
+                market, trades = await engine_api.worker.get_trades(data['exchange'], data['cp'])
+                send_data = {'market': market, 'trades': trades}
 
             if send_data:
                 try:
                     await websocket.send_json(data | send_data)
                 except Exception as e:
-                    print(e)
+                    print(e, data, send_data)
         except asyncio.exceptions.TimeoutError:
             pass
         # except Exception as e:
