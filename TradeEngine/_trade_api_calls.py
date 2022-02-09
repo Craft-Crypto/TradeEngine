@@ -39,6 +39,7 @@ async def ws_v2(queue):
     while True:
         while not queue.empty():
             data = await queue.get()
+            # print('sending data', data)
             await websocket.send_json(data)
         try:
             data = await asyncio.wait_for(websocket.receive(), .25)
@@ -267,10 +268,18 @@ async def save():
     await engine_api.worker.save()
 
 
-@engine_api.route(pfx + '/get_ohlc', methods=['GET'])
+@engine_api.route(pfx + '/get_ohlc', methods=['POST'])
 async def get_ohlc():
-    test = await engine_api.worker.simple_getohlc('Binance')
-    return jsonify(test)
+    form = await request.form
+    print(form)
+    ex = engine_api.worker.exchange_selector(form['exchange'])
+    print('making func run')
+    ohlc = await engine_api.worker.async_get_ohlc(ex, form['cp'], form['candle'], form['num_candles'], True)
+    if ohlc:
+        data = {}
+        data = {'exchange': form['exchange'], 'cp': form['cp'], 'candle': form['candle'], 'ohlc': ohlc}
+        return data
+    return form
 
 
 @engine_api.route(pfx + '/prices', methods=['POST'])

@@ -581,39 +581,50 @@ class TradeEngine(object):
             time.sleep(2)
 
     async def async_get_ohlc(self, ex, cp, candle, candles_needed, *args):
-        await self.a_debit_exchange(ex, 1)
+        try:
+            if args:
+                await self.my_msg('Collecting Candles....', to_tele=True, to_broad=True)
+            t = time.time()
+            await self.a_debit_exchange(ex, 1)
 
-        if str(ex) == 'Coinbase Pro':
-            ohlc = await ex.fetch_ohlcv(cp, candle, limit=300)
-        else:
-            ohlc = await ex.fetch_ohlcv(cp, candle, limit=1000)
-        if ohlc:
-            first = ohlc[0][0]
-            last = ohlc[-1][0]
-            timediff = last - first
-        else:
-            msg = 'Error in collecting candles for: ' + cp + ' on ' + str(ex)
+            if str(ex) == 'Coinbase Pro':
+                ohlc = await ex.fetch_ohlcv(cp, candle, limit=300)
+            else:
+                ohlc = await ex.fetch_ohlcv(cp, candle, limit=1000)
+            if ohlc:
+                first = ohlc[0][0]
+                last = ohlc[-1][0]
+                timediff = last - first
+            else:
+                msg = 'Error in collecting candles for: ' + cp + ' on ' + str(ex)
+                await self.my_msg(msg, to_tele=True, to_broad=True)
+                return None
+
+            while len(ohlc) < int(candles_needed):
+                print('getting more ohlc', len(ohlc))
+                new_ohlc = []
+                await self.a_debit_exchange(ex, 1)
+                if str(ex) == 'Coinbase Pro':
+                    new_ohlc = await ex.fetch_ohlcv(cp, candle, since=(first - timediff), limit=300)
+                    if len(new_ohlc) < 300:
+                        break
+                else:
+                    new_ohlc = await ex.fetch_ohlcv(cp, candle, since=(first-timediff), limit=1000)
+                    if len(new_ohlc) < 1000:
+                        break
+                if new_ohlc:
+                    first = new_ohlc[0][0]
+                    ohlc = new_ohlc + ohlc
+                else:
+                    break
+
+            print('time took', time.time() - t)
+            return ohlc
+
+        except Exception as e:
+            msg = 'Error in collecting candles for: ' + cp + ' on ' + str(ex) + ': ' + str(e)
             await self.my_msg(msg, to_tele=True, to_broad=True)
             return None
-
-        while len(ohlc) < candles_needed:
-            # print('getting more ohlc', len(ohlc))
-            new_ohlc = []
-            await self.a_debit_exchange(ex, 1)
-            if str(ex) == 'Coinbase Pro':
-                new_ohlc = await ex.fetch_ohlcv(cp, candle, since=(first - timediff), limit=300)
-                if len(new_ohlc) < 300:
-                    break
-            else:
-                new_ohlc = await ex.fetch_ohlcv(cp, candle, since=(first-timediff), limit=1000)
-                if len(new_ohlc) < 1000:
-                    break
-            if new_ohlc:
-                first = new_ohlc[0][0]
-                ohlc = new_ohlc + ohlc
-            else:
-                break
-        return ohlc
 
     async def buy_sell_now(self, ex, cp, amount, buy, reset, percent=False, *args):
         try:
