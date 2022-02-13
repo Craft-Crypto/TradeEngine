@@ -1027,3 +1027,15 @@ class TradeEngine(object):
                               to_tele=True, to_broad=True)
             cc.active = False
             tc.active = False
+
+    # To be added once BitMEX is in the bots
+    # def sym_to_cp(self, exchange, cp):
+    #     ex = self.exchange_selector(exchange)
+    #     if cp in ex.markets:
+    #         if ex.markets[cp][active]:
+    #             return  ex.markets[cp]['base'], ex.markets[cp]['quote']
+    #         if sym == cp and ex.:
+    #
+    #
+    # def cp_to_sym(self, exchange, cp):
+

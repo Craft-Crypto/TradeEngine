@@ -137,7 +137,7 @@ async def ws_v2(queue):
                     i += 1
                 i = 0
                 for card in engine_api.worker.ab_trades:
-                    if card['my_id'] == data['my_id']:
+                    if card.my_id == data['my_id']:
                         del engine_api.worker.ab_trades[card]
                         break
                     i += 1
@@ -154,7 +154,7 @@ async def ws_v2(queue):
                     i += 1
                 i = 0
                 for card in engine_api.worker.ab_trades:
-                    if card['my_id'] == data['my_id']:
+                    if card.my_id == data['my_id']:
                         card.sell_now = True
                         await engine_api.worker.do_check_trade_sells(engine_api.worker.ab_trades)
                         break
@@ -253,8 +253,12 @@ async def ws_v2(queue):
                 ex = engine_api.worker.exchange_selector(data['exchange'])
                 await ex.load_markets(reload=True)
                 await engine_api.worker.gather_update_bals()
-                pairs = [cp for cp in ex.markets]
-                send_data = {'pairs': pairs}
+                pairs = {}
+                for cp in ex.markets:
+                    if ex.markets[cp]['active']:
+                        pairs[cp] = {'coin': ex.markets[cp]['base'], 'pair': ex.markets[cp]['quote']}
+                # pairs = [cp for cp in ex.markets if ex.markets[cp]['active']]
+                send_data = {'pairs': pairs, 'balance': ex.balance}
 
             elif data['action'] == 'buy_sell_now':
                 await engine_api.worker.buy_sell_now(data['exchange'], data['cp'], data['amount'], data['buy'],
