@@ -933,11 +933,14 @@ class TradeEngine(object):
 
     async def get_trades(self, exchange, market, *args):
         ex = self.exchange_selector(exchange)
-        if exchange == 'Binance' or exchange == 'Binance US':
-            await self.a_debit_exchange(ex, 10)
+        if ex.apiKey and ex.secret:
+            if exchange == 'Binance' or exchange == 'Binance US':
+                await self.a_debit_exchange(ex, 10)
+            else:
+                await self.a_debit_exchange(ex, 1)
+            return [market, await ex.fetch_my_trades(market)]
         else:
-            await self.a_debit_exchange(ex, 1)
-        return [market, await ex.fetch_my_trades(market)]
+            return [None, None]
 
     async def get_my_id(self):
         self.my_id += 1

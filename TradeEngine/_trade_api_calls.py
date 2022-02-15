@@ -70,8 +70,14 @@ async def ws_v2(queue):
                 data['action'] = 'ab_data'
                 send_data = await get_ab_data(True)
 
+            elif data['action'] == 'ab_limit':
+                engine_api.worker.bb_trade_limit = data['limit']
+                data['action'] = 'ab_data'
+                send_data = await get_ab_data(True)
+
             elif data['action'] == 'ab_data':
                 send_data = await get_ab_data(True)
+
             elif data['action'] == 'add_ab_data':
                 await engine_api.worker.add_ab_card(data['coins'], data['base'], data['trigs'])
 
@@ -116,7 +122,6 @@ async def ws_v2(queue):
                         del engine_api.worker.bb_cards[i]
                         data['action'] = 'bb_data'
                         send_data = await get_bb_data(True)
-                        print('hereeeee')
                         break
                     i += 1
                 i = 0
@@ -127,23 +132,24 @@ async def ws_v2(queue):
                         send_data = await get_ab_data(True)
                         break
                     i += 1
-                print(data, send_data)
 
             elif data['action'] == 'delete_trade':
                 i = 0
                 for card in engine_api.worker.bb_trades:
                     if card.my_id == data['my_id']:
                         del engine_api.worker.bb_trades[i]
+                        data['action'] = 'bb_data'
+                        send_data = await get_bb_data(True)
                         break
                     i += 1
                 i = 0
                 for card in engine_api.worker.ab_trades:
                     if card.my_id == data['my_id']:
                         del engine_api.worker.ab_trades[card]
+                        data['action'] = 'ab_data'
+                        send_data = await get_ab_data(True)
                         break
                     i += 1
-                data['action'] = 'bb_data'
-                send_data = await get_bb_data(True)
 
             elif data['action'] == 'sell_now':
                 i = 0
@@ -180,13 +186,15 @@ async def ws_v2(queue):
                 for card in engine_api.worker.bb_cards:
                     if card.my_id == data['my_id']:
                         card.active = not card.active
+                        data['action'] = 'bb_data'
+                        send_data = await get_bb_data(True)
                         break
                 for card in engine_api.worker.ab_cards:
                     if card.my_id == data['my_id']:
                         card.active = not card.active
+                        data['action'] = 'ab_data'
+                        send_data = await get_ab_data(True)
                         break
-                data['action'] = 'bb_data'
-                send_data = await get_bb_data(True)
 
             elif data['action'] == 'pause_play_all':
                 if data['basic']:
@@ -313,6 +321,7 @@ async def ws_v2(queue):
             elif data['action'] == 'get_trades':
                 market, trades = await engine_api.worker.get_trades(data['exchange'], data['cp'])
                 send_data = {'market': market, 'trades': trades}
+                print(send_data)
 
             elif data['action'] == 'get_manual_price':
                 ex = engine_api.worker.exchange_selector(data['exchange'])

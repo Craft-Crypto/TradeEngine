@@ -65,13 +65,13 @@ async def do_check_bot_cards(self, candle, coin_card, trades, trade_limit, count
                                 if float(tc.now_price) > float(tc.dca_buyback_price):
                                     make_buy = False
                                     msg = 'Wanted to buy {0}, but price is not below buyback price'.format(cp)
-                                    await self.my_msg(msg, verbose=True, to_broad=True)
+                                    await self.my_msg(msg, verbose=True)
                                 else:
                                     dca_trade = True
                             else:
                                 make_buy = False
                                 msg = 'Wanted to buy {0}, but there is an existing active trade'.format(cp)
-                                await self.my_msg(msg, verbose=True, to_broad=True)
+                                await self.my_msg(msg, verbose=True)
                             break
 
                 num_check = True
@@ -224,7 +224,7 @@ async def make_bot_buy(self, coin_card):
     else:
         msg = f'{kind} attempted to buy {cp} with {str(pair_bal)} {pair}. Minimum Amount is {min_cost_amt} {pair}'
 
-        await self.my_msg(msg, to_tele=True, to_broad=True)
+        await self.my_msg(msg, to_tele=True)
 
     # if not args:
     #     for old_card in self.ab_cards:
