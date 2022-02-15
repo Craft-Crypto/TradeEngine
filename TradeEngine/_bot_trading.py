@@ -121,7 +121,7 @@ async def check_card_trade(coin_card, ohlc, *args):
 
 
 async def make_bot_buy(self, coin_card):
-    print('trying to buy')
+    # print('trying to buy')
     # cp for advanced bot is in card. for bb it is in args
     coin = coin_card.coin
     pair = coin_card.pair
@@ -138,7 +138,7 @@ async def make_bot_buy(self, coin_card):
     price = float(ex.prices[cp.replace('/', '')])
 
     if not price:
-        print(ex.prices)
+        # print(ex.prices)
         msg = kind + ' attempted to buy ' + cp + ' But no price has been recorded.'
         await self.my_msg(msg, verbose=True, to_broad=True)
         coin_card.buy_now = False
@@ -147,7 +147,7 @@ async def make_bot_buy(self, coin_card):
     num_coin_on_cost = min_cost_amt / price
     while num_coin_on_cost > min_coin_amt:
         min_coin_amt += float(info['limits']['amount']['min'])
-    print(coin_card.pair, ex.balance)
+    # print(coin_card.pair, ex.balance)
     pair_bal = float(ex.balance[coin_card.pair]) * .99
     msg = 'Balance Data for ' + cp + ': \nPair Balance: ' + str(pair_bal) + '\nMin Trade Amount: ' + str(min_cost_amt)
     await self.my_msg(msg, verbose=True)
@@ -172,7 +172,7 @@ async def make_bot_buy(self, coin_card):
             coin_amt = float(coin_card.pair_minmult.strip('x')) * min_coin_amt
 
         coin_amt = float(ex.amount_to_precision(cp, coin_amt * self.sell_mod))
-        print(coin_amt, min_coin_amt, min_cost_amt, pair_bal, coin_card.pair_minmult)
+        # print(coin_amt, min_coin_amt, min_cost_amt, pair_bal, coin_card.pair_minmult)
         if coin_amt:
             msg = 'Trade Data for ' + cp + ': \nCoin Amount: ' + str(coin_amt) + '\nPair Amount: ' + str(pair_amt)
             await self.my_msg(msg, verbose=True)
@@ -357,7 +357,7 @@ async def do_check_trade_sells(self, trades):
         # try:
         if tc.sell_now:
             sell = True
-            print('going to sell', tc)
+            # print('going to sell', tc)
         else:
             if is_float(tc.stop_price):
                 if float(tc.now_price) <= float(tc.stop_price) and is_float(tc.now_price):
@@ -413,7 +413,7 @@ async def do_check_trade_sells(self, trades):
             try:
                 coin_bal = is_float(ex.balance[tc.coin])
             except Exception as e:
-                print('No balance for trade')
+                # print('No balance for trade')
                 msg = tc.kind + ' ' + tc.coin + ' balance error: ' + str(e)
                 await self.my_msg(msg, to_tele=True, to_broad=True)
                 sell = False
@@ -428,7 +428,6 @@ async def do_check_trade_sells(self, trades):
             for child in tc.childs:
                 sell_amt += float(child['amount'])
 
-
             if sell_amt > 0:
                 await self.a_debit_exchange(ex, 1)
                 sell_amt = float(ex.amount_to_precision(sym, sell_amt * self.sell_mod))
@@ -439,11 +438,11 @@ async def do_check_trade_sells(self, trades):
                     ordr = await ex.create_market_sell_order(sym, sell_amt)
                     tc.sell_now = False
                     tc.sold = True
-                    print(ordr)
+                    # print(ordr)
                     await self.save()
-                    print('DDDDDDDDDDDDDDDDDDDDDOOOOOOOOOOOONNNNNNNNNNNNNNEEEEEEEEEEEEEE')
+                    # print('DDDDDDDDDDDDDDDDDDDDDOOOOOOOOOOOONNNNNNNNNNNNNNEEEEEEEEEEEEEE')
                 except Exception as e:
-                    print(e)
+                    # print(e)
                     if 'MIN_NOTIONAL' in str(e) or 'insufficient balance' in str(e) or '1013' in str(e):
                         msg = 'Trade Error: Too Low of trade amount. Trying to trade all...'
                         await self.my_msg(msg, verbose=True, to_broad=True)

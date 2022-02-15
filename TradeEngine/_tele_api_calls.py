@@ -55,8 +55,8 @@ class TeleBot(Bot):
     
         @self.dp.message_handler(commands=['start'])
         async def tele_start(message: types.Message):
-            print('here')
-            print(self.worker.a_cbp.balance)
+            # print('here')
+            # print(self.worker.a_cbp.balance)
             msg = 'Your Chat ID is: ' + str(message.chat.id)
             await message.answer(msg)
             msg = 'Please copy/paste your Chat ID into TradeCraft Pro'

@@ -49,7 +49,7 @@ async def initialize(self):
                     ex.password = store[exchange]['password']
             except Exception as e:
                 self.my_msg('Error in getting API Store ' + exchange)
-        print('did I get here?')
+        # print('did I get here?')
         need_keys = await self.test_apis()
         if need_keys:
             await self.q.put('set API keys')
@@ -153,8 +153,8 @@ async def initialize(self):
                 self.bb_trade_limit = store['bb_trade_limit']
                 await self.my_msg('Found Basic Bot Trades:')
             except Exception as e:
-                print(e)
-                await self.my_msg('Error loading Basic Bot Trades')
+                # print(e)
+                await self.my_msg('Error loading Basic Bot Trades: ' + str(e))
 
         else:
             await self.my_msg('No Saved Basic Bot Trades Found.')

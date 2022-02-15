@@ -220,7 +220,7 @@ async def ws_v2(queue):
                 for key in keys:
                     ex = engine_api.worker.exchange_selector(key)
                     # try:
-                    print(key, keys[key])
+                    # print(key, keys[key])
                     ex.apiKey = keys[key]['key']
                     ex.secret = keys[key]['secret']
                     if key == 'Coinbase Pro':
@@ -258,7 +258,7 @@ async def ws_v2(queue):
                 send_data = {'balance': ex.balance}
 
             elif data['action'] == 'reload':
-                print('reload ex', data['exchange'])
+                # print('reload ex', data['exchange'])
                 ex = engine_api.worker.exchange_selector(data['exchange'])
                 if ex.apiKey and ex.secret:
                     await ex.load_markets(reload=True)
@@ -269,8 +269,8 @@ async def ws_v2(queue):
                             pairs[cp] = {'coin': ex.markets[cp]['base'], 'pair': ex.markets[cp]['quote']}
                     # pairs = [cp for cp in ex.markets if ex.markets[cp]['active']]
                     send_data = {'pairs': pairs, 'balance': ex.balance}
-                else:
-                    print('no key')
+                # else:
+                #     print('no key')
 
             elif data['action'] == 'buy_sell_now':
                 if 'my_id' in data:
@@ -307,7 +307,7 @@ async def ws_v2(queue):
                     await engine_api.worker.a_debit_exchange(ex, 1)
                     test = await ex.fetch_order(data['trade_id'], data['cp'].replace('/', ''))
                     send_data = {'status': test['status']}
-                    print(send_data)
+                    # print(send_data)
 
             elif data['action'] == 'stop_limit':
                 ex = engine_api.worker.exchange_selector(data['exchange'])
@@ -316,12 +316,13 @@ async def ws_v2(queue):
                     await ex.cancel_order(data['trade_id'], data['cp'].replace('/', ''))
                     await engine_api.worker.gather_update_bals()
                 except Exception as e:
-                    print('Cancel Limit Order Error:', e)
+                    msg = 'Cancel Limit Order Error:', str(e)
+                    await engine_api.worker.my_msg()
 
             elif data['action'] == 'get_trades':
                 market, trades = await engine_api.worker.get_trades(data['exchange'], data['cp'])
                 send_data = {'market': market, 'trades': trades}
-                print(send_data)
+                # print(send_data)
 
             elif data['action'] == 'get_manual_price':
                 ex = engine_api.worker.exchange_selector(data['exchange'])
@@ -341,7 +342,9 @@ async def ws_v2(queue):
                 try:
                     await websocket.send_json(data | send_data)
                 except Exception as e:
-                    print(e, data, send_data)
+                    msg = 'Dict Websocket Error: ' + str(e)
+                    await engine_api.worker.my_msg(msg, to_tele=True, to_broad=True)
+                    # print(e, data, send_data)
         except asyncio.exceptions.TimeoutError:
             pass
         # except Exception as e:
@@ -362,9 +365,9 @@ async def save():
 @engine_api.route(pfx + '/get_ohlc', methods=['POST'])
 async def get_ohlc():
     form = await request.form
-    print(form)
+    # print(form)
     ex = engine_api.worker.exchange_selector(form['exchange'])
-    print('making func run')
+    # print('making func run')
     ohlc = await engine_api.worker.async_get_ohlc(ex, form['cp'], form['candle'], form['num_candles'], True)
     if ohlc:
         data = {}
@@ -376,9 +379,9 @@ async def get_ohlc():
 @engine_api.route(pfx + '/prices', methods=['POST'])
 async def get_ex_price():
     form = await request.form
-    print(form)
+    # print(form)
     ex = engine_api.worker.exchange_selector(form['ex'])
-    print(ex)
+    # print(ex)
     return ex.prices
 
 
@@ -407,13 +410,15 @@ async def get_bb_data(*args):
 @engine_api.route(pfx + '/bb_active', methods=['GET'])
 async def set_bb_active():
     engine_api.worker.bb_active = not engine_api.worker.bb_active
-    print('flipped bb')
+    await engine_api.worker('Basic Bot activation toggled', to_tele=False, to_broad=False)
+    # print('flipped bb')
     return 'flipped'
 
 @engine_api.route(pfx + '/ab_active', methods=['GET'])
 async def set_ab_active():
     engine_api.worker.ab_active = not engine_api.worker.ab_active
-    print('flipped ab')
+    # print('flipped ab')
+    await engine_api.worker('Advanced Bot activation toggled', to_tele=False, to_broad=False)
     return 'flipped'
 
 @engine_api.route(pfx + '/ab_data', methods=['GET'])
@@ -471,8 +476,8 @@ async def set_api_data():
     for dd in data:
         ex = engine_api.worker.exchange_selector(dd)
         # try:
-        print(data, dd)
-        print(data[dd])
+        # print(data, dd)
+        # print(data[dd])
         ex.apiKey = data[dd]['key'] 
         ex.secret = data[dd]['secret'] 
         if dd == 'Coinbase Pro':

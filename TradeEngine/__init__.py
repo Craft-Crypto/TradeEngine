@@ -1,16 +1,14 @@
 import asyncio
 import traceback
-import sys
 import time
 import queue
-
-import ccxt.bitmex
-from CraftCrypto_Helpers.BaseRecord import BaseRecord
+import getpass
 from aioconsole import ainput
+
+from CraftCrypto_Helpers.BaseRecord import BaseRecord
 from CraftCrypto_Helpers.Helpers import is_float, save_store, copy_prec, get_store
 from TradeEngine._tele_api_calls import TeleBot
 from TradeEngine._trade_api_calls import broadcast
-import getpass
 import CraftCrypto_Helpers
 CraftCrypto_Helpers.Helpers.dir_path = '/Users/' + getpass.getuser() + '/Documents/Craft-Crypto/TradeEngine/'
 
@@ -269,7 +267,7 @@ class TradeEngine(object):
         return True
 
     async def add_ab_card(self, coins, base, trigs):
-        print('Engine Getting', coins)
+        # print('Engine Getting', coins)
         # cont = self.addition_dialog.content_cls
         # trig = self.addition_dialog.content_cls.ids.trig
         # pair = cont.pair
@@ -280,20 +278,20 @@ class TradeEngine(object):
 
         if '*' in coins:
             coins = [cp.split('/')[0] for cp in ex.markets if pair in cp and ex.market(cp)['active']]
-            print('Trading Engine Coins')
+            # print('Trading Engine Coins')
 
         for coin in coins:
             found_rec = False
             for rec in self.ab_cards:
                 if rec.coin == coin and rec.pair == pair:
-                    print(rec.my_id)
+                    # print(rec.my_id)
                     my_id = rec.my_id
                     rec.set_record(trigs)
                     rec.set_record(base)
                     rec.my_id = my_id
-                    print(rec.my_id)
+                    # print(rec.my_id)
                     # found_rec = True
-                    print('FOUND rec', rec.coin, rec.pair)
+                    # print('FOUND rec', rec.coin, rec.pair)
                     # rec.reset('now_price', 'coin', 'pair', 'coin_bal', 'pair_bal', 'sim_gain', 'sim_trades', 'sim_date',
                     #          'per_gain', 'num_trades', 'last_price', 'last_buy_price', 'trade_vol', 'trade_price',
                     #          'candle', 'prec', 'ready_sell')
@@ -312,7 +310,7 @@ class TradeEngine(object):
             if not found_rec:
                 rec = BaseRecord()
                 #set dicts
-                print('resetting dict')
+                # print('resetting dict')
                 rec.set_record(trigs)
                 rec.set_record(base)
                 rec.kind = 'Advanced Bot'
@@ -321,8 +319,8 @@ class TradeEngine(object):
                 rec.ready_sell = False
                 rec.active = True
                 self.ab_cards.append(rec)
-                print(rec)
-                print(rec.to_dict())
+                # print(rec)
+                # print(rec.to_dict())
                 await broadcast({'action': 'update_cc', 'card': rec.to_dict()})
         await self.sync_trades_to_cards()
 
@@ -413,7 +411,7 @@ class TradeEngine(object):
                     if is_float(tc.gl_per):
                         per += float(tc.gl_per)
                     num += 1
-            print(num, per)
+            # print(num, per)
             msg = 'Collected ' + str(num) + ' trades for a Gain/Loss of ' + str(copy_prec(per, .11)) + '%'
         else:
             msg = 'No Trades to Collect'
@@ -473,7 +471,7 @@ class TradeEngine(object):
             # print(str(exchange), 'balance took', time.time() - t)
         except Exception as e:
             exchange.api_ok = False
-            print('Error: collecting bals', str(exchange), e)
+            # print('Error: collecting bals', str(exchange), e)
             if '502 Bad Gateway' in str(e):
                 msg = 'Error with ' + str(exchange) + ' Balance: Bad Gateway... will try again.'
             else:
@@ -775,8 +773,8 @@ class TradeEngine(object):
             ex = self.exchange_selector(str(exchange))
             await self.a_debit_exchange(ex, 1)
             amount = ex.amount_to_precision(cp, amount)
-            print('post amounts', amount, 'buy', is_buy)
-            print('pre limit', cp, is_buy, amount, price)
+            # print('post amounts', amount, 'buy', is_buy)
+            # print('pre limit', cp, is_buy, amount, price)
             coin, pair = cp.split('/')
             if is_buy:
                 side = 'buy'
@@ -800,12 +798,12 @@ class TradeEngine(object):
 
             except Exception as e:
                 if 'MIN_NOTIONAL' in str(e) or 'insufficient balance' in str(e) or '1013' in str(e):
-                    print('limit order', cp, is_buy, e)
+                    # print('limit order', cp, is_buy, e)
                     ordr = None
                     msg = cp + ' Loop Limit Order Error: ' + str(e)
                     await self.my_msg(msg, to_tele=True, to_broad=True)
 
-            print(ordr)
+            # print(ordr)
             if ordr:
                 trade_id = ordr['id']
                 print('trade_id', trade_id)
@@ -1054,14 +1052,4 @@ class TradeEngine(object):
             cc.active = False
             tc.active = False
 
-    # To be added once BitMEX is in the bots
-    # def sym_to_cp(self, exchange, cp):
-    #     ex = self.exchange_selector(exchange)
-    #     if cp in ex.markets:
-    #         if ex.markets[cp][active]:
-    #             return  ex.markets[cp]['base'], ex.markets[cp]['quote']
-    #         if sym == cp and ex.:
-    #
-    #
-    # def cp_to_sym(self, exchange, cp):
 
