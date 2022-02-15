@@ -1,3 +1,4 @@
+import ccxt.base.errors
 from quart import Quart, render_template, websocket
 from quart import request, jsonify
 import aiohttp
@@ -251,23 +252,81 @@ async def ws_v2(queue):
             elif data['action'] == 'reload':
                 print('reload ex', data['exchange'])
                 ex = engine_api.worker.exchange_selector(data['exchange'])
-                await ex.load_markets(reload=True)
-                await engine_api.worker.gather_update_bals()
-                pairs = {}
-                for cp in ex.markets:
-                    if ex.markets[cp]['active']:
-                        pairs[cp] = {'coin': ex.markets[cp]['base'], 'pair': ex.markets[cp]['quote']}
-                # pairs = [cp for cp in ex.markets if ex.markets[cp]['active']]
-                send_data = {'pairs': pairs, 'balance': ex.balance}
+                if ex.apiKey and ex.secret:
+                    await ex.load_markets(reload=True)
+                    await engine_api.worker.gather_update_bals()
+                    pairs = {}
+                    for cp in ex.markets:
+                        if ex.markets[cp]['active']:
+                            pairs[cp] = {'coin': ex.markets[cp]['base'], 'pair': ex.markets[cp]['quote']}
+                    # pairs = [cp for cp in ex.markets if ex.markets[cp]['active']]
+                    send_data = {'pairs': pairs, 'balance': ex.balance}
+                else:
+                    print('no key')
 
             elif data['action'] == 'buy_sell_now':
-                await engine_api.worker.buy_sell_now(data['exchange'], data['cp'], data['amount'], data['buy'],
-                                               True, percent=data['percent'])
+                if 'my_id' in data:
+                    my_id = data['my_id']
+                else:
+                    my_id = None
+                if 'percent' in data:
+                    percent = data['percent']
+                else:
+                    percent = False
+
+                await engine_api.worker.buy_sell_now(data['exchange'], data['cp'], data['amount'], data['buy'], True,
+                                                     percent, my_id)
+
                 await engine_api.worker.gather_update_bals()
+
+            elif data['action'] == 'create_limit':
+                if 'my_id' in data:
+                    my_id = data['my_id']
+                else:
+                    my_id = None
+                if 'leverage' in data:
+                    leverage = data['leverage']
+                else:
+                    leverage = None
+
+                await engine_api.worker.limit_buy_sell_now(data['exchange'], data['cp'], data['buy'], data['stop'],
+                                                           data['amount'], data['price'], leverage, my_id,)
+                await engine_api.worker.gather_update_bals()
+
+            elif data['action'] == 'check_limit':
+                ex = engine_api.worker.exchange_selector(data['exchange'])
+                if not data['trade_id'] in ['...', 'Error', '']:
+                    await engine_api.worker.a_debit_exchange(ex, 1)
+                    test = await ex.fetch_order(data['trade_id'], data['cp'].replace('/', ''))
+                    send_data = {'status': test['status']}
+                    print(send_data)
+
+            elif data['action'] == 'stop_limit':
+                ex = engine_api.worker.exchange_selector(data['exchange'])
+                await engine_api.worker.a_debit_exchange(ex, 1)
+                try:
+                    await ex.cancel_order(data['trade_id'], data['cp'].replace('/', ''))
+                    await engine_api.worker.gather_update_bals()
+                except Exception as e:
+                    print('Cancel Limit Order Error:', e)
 
             elif data['action'] == 'get_trades':
                 market, trades = await engine_api.worker.get_trades(data['exchange'], data['cp'])
                 send_data = {'market': market, 'trades': trades}
+
+            elif data['action'] == 'get_manual_price':
+                ex = engine_api.worker.exchange_selector(data['exchange'])
+                sym = data['symbol'].replace('/', '')
+                if sym in ex.prices:
+                    send_data = {'price': ex.prices[sym],
+                                 'min_amount': ex.market(sym)['limits']['amount']['min'],
+                                 'min_cost': ex.market(sym)['limits']['cost']['min']
+                                 }
+                else:
+                    send_data = {'price': 'Error: Symbol Not Listed',
+                                 'min_amount': '',
+                                 'min_cost': ''
+                                 }
 
             if send_data:
                 try:

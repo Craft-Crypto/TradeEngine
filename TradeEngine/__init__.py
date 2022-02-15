@@ -3,6 +3,8 @@ import traceback
 import sys
 import time
 import queue
+
+import ccxt.bitmex
 from CraftCrypto_Helpers.BaseRecord import BaseRecord
 from aioconsole import ainput
 from CraftCrypto_Helpers.Helpers import is_float, save_store, copy_prec, get_store
@@ -684,7 +686,7 @@ class TradeEngine(object):
             await self.my_msg(msg, to_tele=True, to_broad=True)
             return None
 
-    async def buy_sell_now(self, ex, cp, amount, buy, reset, percent=False, *args):
+    async def buy_sell_now(self, ex, cp, amount, is_buy, reset, percent=False, my_id=None, *args):
         try:
             # ex = self.exchange_selector(exchange)
             if type(ex) == str:
@@ -694,7 +696,7 @@ class TradeEngine(object):
             coin, pair = cp.split('/')
             if percent:
                 # amount is percent of amount to sell
-                if buy:
+                if is_buy:
                     amount = float(ex.balance[pair]) / price * float(amount) / 100
                 else:
                     amount = float(ex.balance[coin]) * float(amount) / 100
@@ -717,14 +719,14 @@ class TradeEngine(object):
             # print('post amounts', amount, 'buy', buy)
 
             try:
-                if buy:
+                if is_buy:
                     ordr = await ex.create_market_buy_order(cp, amount)
                 else:
                     ordr = await ex.create_market_sell_order(cp, amount)
             except Exception as e:
                 if 'MIN_NOTIONAL' in str(e) or 'insufficient balance' in str(e) or '1013' in str(e):
                     # print(cp, buy, e)
-                    ordr = await self.try_trade_all(ex, cp, buy)
+                    ordr = await self.try_trade_all(ex, cp, is_buy)
                 else:
                     ordr = None
 
@@ -739,12 +741,12 @@ class TradeEngine(object):
 
                 if is_float(ordr['filled']):
                     amount = float(ordr['filled'])
-                    if buy:
+                    if is_buy:
                         msg = 'Bought ' + str(amount) + ' ' + coin + ' at ' + str(pr) + ' ' + cp
                     else:
                         msg = 'Sold ' + str(amount) + ' ' + coin + ' at ' + str(pr) + ' ' + cp
                 else:
-                    if buy:
+                    if is_buy:
                         msg = 'Buy order of ' + str(amount) + ' ' + coin + ' at ' + str(pr) + ' ' + cp + ' sent.'
                     else:
                         msg = 'Sell order of ' + str(amount) + ' ' + coin + ' at ' + str(pr) + ' ' + cp + ' sent.'
@@ -753,22 +755,71 @@ class TradeEngine(object):
                     await self.my_msg(msg, to_tele=True, to_broad=True)
                     await self.gather_update_bals()
             else:
-                pr = None
+                pr = 'Error'
                 amount = '0'
+
+            if my_id:
+                await broadcast({'action': 'relay_trade', 'my_id': my_id, 'trade_price': str(pr), 'is_buy': is_buy})
 
             return pr, amount
 
         except Exception as e:
             msg = 'Error in trading ' + cp + ': ' + str(e)
             await self.my_msg(msg, to_tele=True, to_broad=True)
+            if my_id:
+                await broadcast({'action': 'relay_trade', 'my_id': my_id, 'trade_price': 'Error', 'is_buy': is_buy})
             return None, '0'
 
-    async def limit_buy_sell_now(self, exchange, cp, buy, amount, price, leverage, *args):
+    async def limit_buy_sell_now(self, exchange, cp, is_buy, is_stop, amount, price, leverage, my_id=None, *args):
         try:
             ex = self.exchange_selector(str(exchange))
             await self.a_debit_exchange(ex, 1)
+            amount = ex.amount_to_precision(cp, amount)
+            print('post amounts', amount, 'buy', is_buy)
+            print('pre limit', cp, is_buy, amount, price)
+            coin, pair = cp.split('/')
+            if is_buy:
+                side = 'buy'
+            else:
+                side = 'sell'
 
-            print('pre limit', cp, buy, amount, price)
+            params = {}
+            if is_stop:
+                params = {
+                    'stopPrice': str(price),  # your stop price
+                    'type': 'stopLimit',
+                }
+                if is_buy:
+                    price = price * .995
+                else:
+                    price = price * 1.005
+
+            try:
+                print('trying to place', cp, is_buy, amount, price)
+                ordr = await ex.create_order(cp, 'limit', side, amount, price, params)
+
+            except Exception as e:
+                if 'MIN_NOTIONAL' in str(e) or 'insufficient balance' in str(e) or '1013' in str(e):
+                    print('limit order', cp, is_buy, e)
+                    ordr = None
+                    msg = cp + ' Loop Limit Order Error: ' + str(e)
+                    await self.my_msg(msg, to_tele=True, to_broad=True)
+
+            print(ordr)
+            if ordr:
+                trade_id = ordr['id']
+                print('trade_id', trade_id)
+
+                if is_buy:
+                    msg = 'Placed Limit Buy of ' + str(amount) + ' ' + coin + ' at ' + str(price) + ' ' + cp
+                else:
+                    msg = 'Placed Limit Sell of ' + str(amount) + ' ' + coin + ' at ' + str(price) + ' ' + cp
+
+                await self.my_msg(msg, to_tele=True, to_broad=True)
+                await self.gather_update_bals(str(ex))
+            else:
+                trade_id = 'Error'
+
             # amount = float(amount)
             # info = ex.market(cp)
             # min_coin_amt = float(info['limits']['amount']['min'])
@@ -781,11 +832,6 @@ class TradeEngine(object):
             #
             # if amount < min_coin_amt:
             #     amount = min_coin_amt
-
-            amount = ex.amount_to_precision(cp, amount)
-            print('post amounts', amount, 'buy', buy)
-
-            coin, pair = cp.split('/')
 
             # sell_amt = float(self.binance.amount_to_precision(cp, amount * self.sell_mod))
             # ordr = ''
@@ -801,39 +847,16 @@ class TradeEngine(object):
             # test = await exchange.cancel_order('771551442', 'BTCUSD')
             # print(test)
 
-            try:
-                print('trying to place', cp, buy, amount, price)
-                ordr = await ex.create_limit_order(cp, buy, amount, price)
-
-            except Exception as e:
-                if 'MIN_NOTIONAL' in str(e) or 'insufficient balance' in str(e) or '1013' in str(e):
-                    print('limit order', cp, buy, e)
-                    ordr = None
-                    msg = cp + ' Loop Limit Order Error: ' + str(e)
-                    await self.my_msg(msg, to_tele=True, to_broad=True)
-                    return None
-
-            print(ordr)
-            if ordr:
-                trade_id = ordr['id']
-
-                if buy:
-                    msg = 'Placed Limit Buy of ' + str(amount) + ' ' + coin + ' at ' + str(price) + ' ' + cp
-                else:
-                    msg = 'Placed Limit Sell of ' + str(amount) + ' ' + coin + ' at ' + str(price) + ' ' + cp
-
-                await self.my_msg(msg, to_tele=True, to_broad=True)
-                await self.gather_update_bals(str(ex))
-            else:
-                trade_id = None
-
-            return trade_id
+            if my_id:
+                await broadcast({'action': 'relay_trade', 'my_id': my_id, 'trade_id': str(trade_id), 'is_buy': is_buy})
 
 
         except Exception as e:
             msg = 'Error in Loop trading ' + cp + ': ' + str(e)
             await self.my_msg(msg, to_tele=True, to_broad=True)
-            return None
+            trade_id = 'Error'
+            if my_id:
+                await broadcast({'action': 'relay_trade', 'my_id': my_id, 'trade_id': str(trade_id), 'is_buy': is_buy})
 
     async def try_trade_all(self, ex, cp, buy, *args):
         try:
