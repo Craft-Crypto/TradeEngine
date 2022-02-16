@@ -7,8 +7,8 @@ import ccxt.async_support as a_ccxt
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
 from CraftCrypto_Helpers.Helpers import get_store, save_store, archive_store, delete_store
-from TradeEngine._tele_api_calls import TeleBot
-from TradeEngine._trade_api_calls import engine_api
+from TradeEngine.tele_api_calls import TeleBot
+from TradeEngine.trade_api_calls import engine_api
 from CraftCrypto_Helpers.BaseRecord import BaseRecord, convert_record
 
 

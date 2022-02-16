@@ -1,5 +1,5 @@
 from aioconsole import ainput
-from TradeEngine._tele_api_calls import TeleBot
+from TradeEngine.tele_api_calls import TeleBot
 from CraftCrypto_Helpers.Helpers import file_path, is_float, copy_prec
 
 

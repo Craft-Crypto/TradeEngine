@@ -4,7 +4,7 @@ import asyncio
 from MarketMath import calculate_market_indicators, determine_buy_sell
 from CraftCrypto_Helpers.BaseRecord import BaseRecord
 from aioconsole import ainput
-from ._trade_api_calls import broadcast
+from .trade_api_calls import broadcast
 
 
 async def check_bot_cards(self, candle):

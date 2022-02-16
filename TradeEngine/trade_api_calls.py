@@ -71,7 +71,7 @@ async def ws_v2(queue):
                 send_data = await get_ab_data(True)
 
             elif data['action'] == 'ab_limit':
-                engine_api.worker.bb_trade_limit = data['limit']
+                engine_api.worker.ab_trade_limit = data['limit']
                 data['action'] = 'ab_data'
                 send_data = await get_ab_data(True)
 

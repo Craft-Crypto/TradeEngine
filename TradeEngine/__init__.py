@@ -7,19 +7,19 @@ from aioconsole import ainput
 
 from CraftCrypto_Helpers.BaseRecord import BaseRecord
 from CraftCrypto_Helpers.Helpers import is_float, save_store, copy_prec, get_store
-from TradeEngine._tele_api_calls import TeleBot
-from TradeEngine._trade_api_calls import broadcast
+from TradeEngine.tele_api_calls import TeleBot
+from TradeEngine.trade_api_calls import broadcast
 import CraftCrypto_Helpers
 CraftCrypto_Helpers.Helpers.dir_path = '/Users/' + getpass.getuser() + '/Documents/Craft-Crypto/TradeEngine/'
 
 
 class TradeEngine(object):
-    from ._ex_websockets import websocket_bin, websocket_binUS, websocket_bm
-    from ._ex_websockets import websocket_cbp, websocket_ftx, websocket_kraken
-    from ._bot_startup import initialize, test_apis, init_tele_bot
-    from ._input_management import manage_input
-    from ._bot_trading import check_bot_cards, do_check_bot_cards, make_bot_buy, quick_trade
-    from ._bot_trading import add_trade_card, update_card_trade_data, check_trade_sells, do_check_trade_sells
+    from .ex_websockets import websocket_bin, websocket_binUS, websocket_bm
+    from .ex_websockets import websocket_cbp, websocket_ftx, websocket_kraken
+    from .bot_startup import initialize, test_apis, init_tele_bot
+    from .input_management import manage_input
+    from .bot_trading import check_bot_cards, do_check_bot_cards, make_bot_buy, quick_trade
+    from .bot_trading import add_trade_card, update_card_trade_data, check_trade_sells, do_check_trade_sells
 
     def __init__(self, **kwargs):
         # Setup Server
