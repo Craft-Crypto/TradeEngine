@@ -36,7 +36,7 @@ def print_status_info(info):
 
 if __name__ == "__main__":
     tcl_name = 'TradeEngine'
-    tcl_version = '0.0.1'
+    tcl_version = '0.1.0'
 
     try:
         print('Welcome to TradeCraft Lite v' + tcl_version)
@@ -58,14 +58,13 @@ if __name__ == "__main__":
         TE.run()
 
         store = get_store('Log')
-        log = []
-        add_line = False
-        smaller = []
-        msg = ''
-        for m in TE.msgs:
-            msg += m['text'] + '\n'
+        date = time.strftime('%I:%M:%S %p %m/%d/%y')
+        store[date] = {}
+        i = 0
+        for m in TE.log_msgs:
+            store[date][i] = m
+            i += 1
 
-        store[time.strftime('%I:%M:%S %p %m/%d/%y')] = msg
         save_store('Log', store)
 
     except Exception as e:
@@ -76,17 +75,19 @@ if __name__ == "__main__":
             err = traceback.format_exc()
             # print(err)
             store = get_store('ErrorLog')
-            log = []
-            add_line = False
-            smaller = []
             tim = time.strftime('%I:%M:%S %p %m/%d/%y')
-            store[tim] = err
-            msg = ''
-            for m in TE.msgs:
-                msg += m['text'] + '\n'
-
-            store[tim + ' LOG'] = msg
+            store[tim] = {'Error': err}
             save_store('ErrorLog', store)
+
+            store = get_store('Log')
+            date = time.strftime('%I:%M:%S %p %m/%d/%y')
+            store[date] = {}
+            i = 0
+            for m in TE.log_msgs:
+                store[date][i] = m
+                i += 1
+
+            save_store('Log', store)
             # store.put(time.strftime('%I:%M:%S %p %m/%d/%y'), msg=log)
             print('****************** End Errror *************')
 
