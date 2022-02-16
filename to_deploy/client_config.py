@@ -4,4 +4,4 @@ class ClientConfig(object):
     COMPANY_NAME = 'Craft-Crypto, LLC'
     HTTP_TIMEOUT = 30
     MAX_DOWNLOAD_RETRIES = 3
-    UPDATE_URLS = ['https://woo-tradecraft.s3.us-east-2.amazonaws.com/z']
+    UPDATE_URLS = ['https://woo-tradeengine.s3.us-east-2.amazonaws.com/']
