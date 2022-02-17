@@ -253,7 +253,7 @@ async def manage_input(self, msg):
             await self.quick_trade([kind, ex, cp, amount])
 
     elif msg == 'exit':
-        await self.exit()
+        self.exit()
 
 
     #

@@ -83,8 +83,8 @@ async def initialize(self):
                 self.my_msg('Error in getting API Store ' + exchange)
         # print('did I get here?')
         need_keys = await self.test_apis()
-        if need_keys:
-            await self.q.put('set API keys')
+        # if need_keys:
+        #     await self.q.put('set API keys')
     else:
         await self.my_msg('No Keys Found...')
         # await self.q.put('set API keys')
@@ -158,58 +158,98 @@ async def initialize(self):
     await self.my_msg('Loading Saved Trades...')
 
     # Check for Legacy
-    store = get_store('LiteBot')
-    if store:
-        for cc in store['trades']:
-            new_rec = convert_record(cc)
-            new_rec.kind = 'Basic Bot'
-            self.bb_trades.append(new_rec)
-        archive_store('LiteBot')
-        await self.update_strat('Binance', '1', 'USD', True)
-        self.bb_strat.pair_minmult = '2'
-        await self.save()
-    else:
-        delete_store('LiteBot')
-        store = get_store('BasicBot')
+    try:
+        store = get_store('LiteBot')
         if store:
-            try:
-                self.bb_strat.set_record(store['bb_strat'])
-                for cc in store['bb_cards']:
-                    rec = BaseRecord()
-                    rec.set_record(cc)
-                    self.bb_cards.append(rec)
-                for tc in store['bb_trades']:
-                    rec = BaseRecord()
-                    rec.set_record(tc)
-                    self.bb_trades.append(rec)
-                self.bb_trade_limit = store['bb_trade_limit']
-                await self.my_msg('Found Basic Bot Trades:')
-            except Exception as e:
-                # print(e)
-                await self.my_msg('Error loading Basic Bot Trades: ' + str(e))
-
+            for cc in store['trades']:
+                new_rec = convert_record(cc)
+                new_rec.kind = 'Basic Bot'
+                self.bb_trades.append(new_rec)
+            archive_store('LiteBot')
+            await self.update_strat('Binance', '1', 'USD', True)
+            self.bb_strat.pair_minmult = '2'
+            await self.save()
         else:
-            await self.my_msg('No Saved Basic Bot Trades Found.')
-            # await self.q.put('set strat')
+            delete_store('LiteBot')
+            store = get_store('BasicBot')
+            if store:
+                try:
+                    if 'trades' in store:
+                        # Have legacy
+                        for cc in store['trades']:
+                            new_rec = convert_record(cc)
+                            new_rec.kind = 'Basic Bot'
+                            self.bb_trades.append(new_rec)
+                        archive_store('BasicBot')
+                        delete_store('BasicBot')
+                        await self.update_strat('Binance', '1', 'USD', True)
+                        self.bb_strat.pair_minmult = '2'
+                        await self.save()
+                    else:
+                        self.bb_strat.set_record(store['bb_strat'])
+                        for cc in store['bb_cards']:
+                            rec = BaseRecord()
+                            rec.set_record(cc)
+                            self.bb_cards.append(rec)
+                        for tc in store['bb_trades']:
+                            rec = BaseRecord()
+                            rec.set_record(tc)
+                            self.bb_trades.append(rec)
+                        self.bb_trade_limit = store['bb_trade_limit']
+                    await self.my_msg('Found Basic Bot Trades:')
+                except Exception as e:
+                    # print(e)
+                    await self.my_msg('Error loading Basic Bot Trades: ' + str(e))
 
-    store = get_store('AdvancedBot')
-    if store:
-        try:
-            for cc in store['ab_cards']:
-                rec = BaseRecord()
-                rec.set_record(cc)
-                self.ab_cards.append(rec)
-            for tc in store['ab_trades']:
-                rec = BaseRecord()
-                rec.set_record(tc)
-                self.ab_trades.append(rec)
-            self.ab_trade_limit = store['ab_trade_limit']
-            await self.my_msg('Found Advanced Bot Trades:')
-        except Exception as e:
-            await self.my_msg('Error loading Advanced Bot Trades')
+            else:
+                await self.my_msg('No Saved Basic Bot Trades Found.')
+                # await self.q.put('set strat')
 
-    else:
-        await self.my_msg('No Saved Advanced Bot Trades Found.')
+        # Check for Legacy Advanced Bot
+        store_cc = get_store('coincard')
+        store_tc = get_store('coincard_trade')
+        if store_cc or store_tc:
+            # Have legacy
+            if store_cc:
+                for cc in store_cc['coincards']:
+                    new_rec = convert_record(store_cc['coincards'][cc])
+                    new_rec.kind = 'Advanced Bot'
+                    self.ab_cards.append(new_rec)
+                archive_store('coincard')
+                await self.save()
+            if store_tc:
+                # Have legacy
+                for cc in store_tc['trades']:
+                    new_rec = convert_record(store_tc['trades'][cc])
+                    new_rec.kind = 'Advanced Bot'
+                    self.ab_trades.append(new_rec)
+                archive_store('coincard_trade')
+                await self.save()
+        else:
+            delete_store('coincard')
+            delete_store('coincard_trade')
+
+            store = get_store('AdvancedBot')
+            if store:
+                try:
+                    for cc in store['ab_cards']:
+                        rec = BaseRecord()
+                        rec.set_record(cc)
+                        self.ab_cards.append(rec)
+                    for tc in store['ab_trades']:
+                        rec = BaseRecord()
+                        rec.set_record(tc)
+                        self.ab_trades.append(rec)
+                    self.ab_trade_limit = store['ab_trade_limit']
+                    await self.my_msg('Found Advanced Bot Trades:')
+                except Exception as e:
+                    await self.my_msg('Error loading Advanced Bot Trades')
+
+            else:
+                await self.my_msg('No Saved Advanced Bot Trades Found.')
+
+    except Exception as e:
+        await self.my_msg('Error in loading Saved Bot Cards: ' + str(e))
 
     #
     # await self.my_msg('Strategy: ' + self.strat_name, False, False)

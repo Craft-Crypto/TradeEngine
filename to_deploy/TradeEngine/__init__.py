@@ -124,13 +124,16 @@ class TradeEngine(object):
 
     async def async_worker(self):
         t = time.time()
-        await self.initialize()
+        try:
+            await self.initialize()
+        except Exception as e:
+            self.my_msg('Error in Initialization: ' + str(e))
 
         while self.running:
             if self.q.empty():
                 if not self.looking:
                     asyncio.ensure_future(self.get_user_input())
-                await asyncio.sleep(0)
+                await asyncio.sleep(2)
             else:
                 msg = await self.q.get()
                 await self.manage_input(msg)

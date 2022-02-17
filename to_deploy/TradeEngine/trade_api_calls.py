@@ -380,9 +380,10 @@ async def ws_v2(queue):
                     # print(e, data, send_data)
         except asyncio.exceptions.TimeoutError:
             pass
-        # except Exception as e:
-        #     print('back to checking....', e, e.__class__)
-        #     print(data, send_data)
+        except Exception as e:
+            msg = 'Websocket error: ' + str(e) + '    ' + str(e.__class__)
+            await engine_api.worker.my_msg(msg, to_tele=False, to_broad=False, verbose=True)
+
 
 
 @engine_api.route(pfx + '/ping', methods=['GET'])
