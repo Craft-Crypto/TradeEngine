@@ -34,6 +34,7 @@
 from aioconsole import ainput
 from TradeEngine.tele_api_calls import TeleBot
 from CraftCrypto_Helpers.Helpers import file_path, is_float, copy_prec
+import sys
 
 
 async def manage_input(self, msg):
@@ -109,6 +110,8 @@ async def manage_input(self, msg):
 
     elif msg == 'bb now':
         self.bb_active = True
+        msg = 'Starting Basic Bot checks now.'
+        await self.my_msg(msg, to_tele=True, to_broad=True)
         await self.check_bot_cards(self.bb_strat.candle)
 
     elif msg == 'bb card status':
@@ -122,12 +125,13 @@ async def manage_input(self, msg):
     elif msg == 'bb status':
         msg = '*******'
         msg += 'Basic Bot Status:'
+        msg += '\n-Active: ' + str(self.bb_active)
         msg += '\n-Strategy: ' + str(self.bb_strat.title)
         msg += '\n-Exchange: ' + str(self.bb_strat.exchange)
         msg += '\n-Pair: ' + str(self.bb_strat.pair)
         msg += '\n-Pair Min Mult: ' + str(self.bb_strat.pair_minmult)
         msg += '\n-Trade Limit: ' + str(self.bb_trade_limit)
-        await self.my_msg(msg, to_tele=True, to_broad=True)
+        await self.my_msg(msg, to_tele=True, to_broad=False)
 
     elif msg == 'activate ab':
         self.ab_active = True
@@ -140,10 +144,10 @@ async def manage_input(self, msg):
     elif msg in ['bb trades', 'ab trades']:
         trades = []
         if 'bb' in msg:
-            await self.my_msg('*******\nBasic Bot Trades:', to_tele=True, to_broad=True)
+            await self.my_msg('*******\nBasic Bot Trades:', to_tele=True, to_broad=False)
             trades = self.bb_trades
         else:
-            await self.my_msg('*******\nAdvanced Bot Trades:', to_tele=True, to_broad=True)
+            await self.my_msg('*******\nAdvanced Bot Trades:', to_tele=True, to_broad=False)
             trades = self.ab_trades
 
         if trades:
@@ -159,7 +163,7 @@ async def manage_input(self, msg):
                         child_gl = str(round(gl, 2))
                         msg += '\n-- {0} at {1} {2}%'.format(child['amount'], child['buy_price'], str(child_gl))
                 msg += '\n- Last Updated: ' + tr.last_update
-                await self.my_msg(msg, False, True)
+                await self.my_msg(msg, to_tele=True, to_broad=False)
         else:
             await self.my_msg('No trades found. Use \'activate bb\' or \'activate ab\' to begin trading.', to_tele=True)
 
@@ -392,24 +396,36 @@ async def manage_input(self, msg):
     #
     #     asyncio.ensure_future(self.get_user_input())
     elif msg == 'help':
-        msg = 'List of Bot commands:'
-        msg += '\nset cc key - Start process of adding new Craft-Crypto Key'
-        msg += '\nreplace key - Replace Craft-Crypto Key'
+        msg = 'TradeEngine can be fully controlled through TradeCraft Pro. However, the following commands ' \
+              'can also be used. Any changes made in TradeEngine will also be reflected in TradeCraft Pro.'
+        msg += '\nList of Bot commands:'
+        msg += '\nsetup - Starts the process of setting exchanges and keys. This can be done through TradeCraft Pro'
         msg += '\nset API keys - Add API Keys for Exchanges'
         msg += '\nset tele keys - Add Keys for Telegram Integration'
-        msg += '\nset strat - Choose which Strategy for the Bot to follow'
-        msg += '\nactivate - Allow the Bot to Trade'
-        msg += '\npause - Pause Bot Trading'
-        msg += '\nstatus - Status of the Bot'
-        msg += '\ntrades - List of trades and their Status'
-        msg += '\ndetailed trades - Detailed list of trades and their Status'
-        msg += '\nquick trade - Make a manual Buy or Sell'
-        msg += '\ncollect - Collect sold Trades and Give Report'
-        msg += '\nclear trades - Deletes all Trades in Bot. Does not trade on the Exchange'
-        msg += '\nbalance - Display Coin Balances from Exchanges'
+        msg += '\nset bb strat - Configure the Basic Bot'
+        msg += '\nbb status - Hows the current strategy for the Basic Bot'
+        msg += '\nactivate bb - Start the Basic Bot'
+        msg += '\npause bb - Pause the Basic Bot'
+        msg += '\nbb now - Starts the Basic Bot, and also evaluates all the coins immediately'
+        msg += '\nbb card status - Prints the cards used in Basic Bot trading (not easily readable... yet)'
+        msg += '\nab card status - Prints the cards used in Advanced Bot trading (not easily readable... yet)'
+        msg += '\nactivate ab - Start the Advanced Bot'
+        msg += '\npause ab - Pause the Advanced Bot'
+        msg += '\nbb trades - Prints overview of trades made by Basic Bot'
+        msg += '\nbb detailed trades - Prints detailed overview of trades made by Basic Bot'
+        msg += '\nclear bb trades - Deletes all trades made by Basic Bot'
+        msg += '\ncollect bb - Clears all completed trades made by Basic Bot'
+        msg += '\nsell positive bb - Sells all trades that are positive for Basic Bot'
+        msg += '\nab trades - Prints overview of trades made by Advanced Bot'
+        msg += '\nab detailed trades - Prints detailed overview of trades made by Advanced Bot'
+        msg += '\nclear ab trades - Deletes all trades made by Advanced Bot'
+        msg += '\ncollect ab - Clears all completed trades made by Advanced Bot'
+        msg += '\nsell positive ab - Sells all trades that are positive for Advanced Bot'
+        msg += '\nbalance - Shows current account balances'
+        msg += '\nquick trade - Starts a trade outside of the Bots'
         msg += '\nsave - Save Data'
         msg += '\nverbose - Give more detailed running information on the Bot'
-        msg += '\neula - Display End User License Agreement'
+        msg += '\nexit - Closes TradeEngine (ungracefully for now)'
         msg += '\nFor more information, please visit craft-crypto.com'
         await self.my_msg(msg, False, False)
     else:

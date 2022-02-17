@@ -70,8 +70,23 @@ class TeleBot(Bot):
     async def set_commands(self):
         tele_cmds = [{'command': 'start', 'description': 'Start bot and get Chat ID'},
                      {'command': 'ping', 'description': 'Check if App is still connected'},
-                     {'command': 'accounts', 'description': 'Get update on balances of coins'},
+                     {'command': 'balance', 'description': 'Get update on balances of coins'},
                      {'command': 'trade', 'description': 'Buy/Sell Crypto'},
+                     {'command': 'bb_status', 'description': 'Get Status of Basic Bot'},
+                     {'command': 'activate_bb', 'description': 'Activate Basic Bot'},
+                     {'command': 'pause_bb', 'description': 'Pause Basic Bot'},
+                     {'command': 'bb_now', 'description': 'Activate Basic Bot and Evaluate Cards Now'},
+                     {'command': 'bb_trades', 'description': 'Get Trades from Basic Bot'},
+                     {'command': 'bb_detailed_trades', 'description': 'Get Detailed Trades from Basic Bot'},
+                     {'command': 'collect_bb', 'description': 'Clear completed Basic Bot Trades'},
+                     {'command': 'sell_positive_bb', 'description': 'Sell positive Basic Bot trades'},
+
+                     {'command': 'activate_ab', 'description': 'Activate Advanced Bot'},
+                     {'command': 'pause_ab', 'description': 'Pause Advanced Bot'},
+                     {'command': 'ab_trades', 'description': 'Get Trades from Advanced Bot'},
+                     {'command': 'ab_detailed_trades', 'description': 'Get Detailed Trades from Advanced Bot'},
+                     {'command': 'collect_ab', 'description': 'Clear completed Advanced Bot Trades'},
+                     {'command': 'sell_positive_ab', 'description': 'Sell positive Advanced Bot trades'},
                     ]
         await self.set_my_commands(tele_cmds)
 
@@ -95,19 +110,65 @@ class TeleBot(Bot):
             msg = 'Please copy/paste your Chat ID into TradeCraft Pro'
             await message.answer(msg)
 
-        @self.dp.message_handler(commands=['accounts'])
+        @self.dp.message_handler(commands=['balance'])
         async def tele_get_accounts(message: types.Message):
-            no_bal = True
-            for exchange in self.worker.exchanges:
-                ex = self.worker.exchange_selector(exchange)
-                if ex.balance:
-                    msg = exchange + ' Balance:'
-                    for bal in ex.balance:
-                        msg += '\n' + bal + ': ' + str(ex.balance[bal])
-                    await message.answer(msg)
-                    no_bal = False
-            if no_bal:
-                await message.answer('No Balances Found. Please check API Keys.')
+            await self.worker.manage_input('balance')
+
+        @self.dp.message_handler(commands=['bb_status'])
+        async def bb_status(message: types.Message):
+            await self.worker.manage_input('bb status')
+
+        @self.dp.message_handler(commands=['activate_bb'])
+        async def activate_bb(message: types.Message):
+            await self.worker.manage_input('activate bb')
+
+        @self.dp.message_handler(commands=['pause_bb'])
+        async def pause_bb(message: types.Message):
+            await self.worker.manage_input('pause bb')
+
+        @self.dp.message_handler(commands=['bb_now'])
+        async def bb_now(message: types.Message):
+            await self.worker.manage_input('bb now')
+
+        @self.dp.message_handler(commands=['bb_trades'])
+        async def bb_trades(message: types.Message):
+            await self.worker.manage_input('bb trades')
+
+        @self.dp.message_handler(commands=['bb_detailed_trades'])
+        async def bb_detailed_trades(message: types.Message):
+            await self.worker.manage_input('bb detailed trades')
+
+        @self.dp.message_handler(commands=['collect_bb'])
+        async def collect_bb(message: types.Message):
+            await self.worker.manage_input('collect bb')
+
+        @self.dp.message_handler(commands=['sell_positive_bb'])
+        async def sell_positive_bb(message: types.Message):
+            await self.worker.manage_input('sell positive bb')
+
+        @self.dp.message_handler(commands=['activate_ab'])
+        async def activate_ab(message: types.Message):
+            await self.worker.manage_input('activate ab')
+
+        @self.dp.message_handler(commands=['pause_ab'])
+        async def pause_ab(message: types.Message):
+            await self.worker.manage_input('pause ab')
+
+        @self.dp.message_handler(commands=['ab_trades'])
+        async def ab_trades(message: types.Message):
+            await self.worker.manage_input('ab trades')
+
+        @self.dp.message_handler(commands=['ab_detailed_trades'])
+        async def ab_detailed_trades(message: types.Message):
+            await self.worker.manage_input('ab detailed trades')
+
+        @self.dp.message_handler(commands=['collect_ab'])
+        async def collect_ab(message: types.Message):
+            await self.worker.manage_input('collect ab')
+
+        @self.dp.message_handler(commands=['sell_positive_ab'])
+        async def sell_positive_ab(message: types.Message):
+            await self.worker.manage_input('sell positive ab')
 
         @self.dp.message_handler(state='*', commands='cancel')
         @self.dp.message_handler(Text(equals='cancel', ignore_case=True), state='*')
