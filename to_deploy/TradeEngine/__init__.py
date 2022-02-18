@@ -553,14 +553,15 @@ class TradeEngine(object):
                         btc_bal += float(ex.balance[coin]) / float(ex.prices[pc])
                         # print(pc, exchange.prices[pc], btc_bal)
 
-                    elif cusd in ex.prices.keys():
-                        usd_val = float(ex.balance[coin]) * float(ex.prices[cusd])
-                        btc_bal += usd_val / float(ex.prices['BTCUSD'])
-                        # print(cusd, exchange.prices[cusd], btc_bal)
+                    # search for USDT first as USD is in USDT
                     elif cusdt in ex.prices.keys():
                         usd_val = float(ex.balance[coin]) * float(ex.prices[cusdt])
                         btc_bal += usd_val / float(ex.prices['BTCUSDT'])
                         # print(cusdt, exchange.prices[cusdt], btc_bal)
+                    elif cusd in ex.prices.keys():
+                        usd_val = float(ex.balance[coin]) * float(ex.prices[cusd])
+                        btc_bal += usd_val / float(ex.prices['BTCUSD'])
+                        # print(cusd, exchange.prices[cusd], btc_bal)
 
                     else:
                         # print('oops', coin)
