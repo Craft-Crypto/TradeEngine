@@ -46,7 +46,7 @@ import distutils
 import shutil
 import subprocess
 import sys
-
+import win32con
 
 # Starts everything off
 def check_for_update(te_name, te_version):
@@ -77,7 +77,7 @@ def print_status_info(info):
 
 if __name__ == "__main__":
     te_name = 'TradeEngine'
-    te_version = '1.0.1'
+    te_version = '1.0.4'
 
     try:
         print('Welcome to TradeCraft Lite v' + te_version)
@@ -86,45 +86,59 @@ if __name__ == "__main__":
         # uncomment this for automatic updates on packaged versions
         my_update = check_for_update(te_name, te_version)
 
-        if isinstance(my_update, pyupdater.client.updates.LibUpdate):  # AppUpdate, LibUpdate
+        if my_update:
             print('Library Update Found. Download and restart?')
             msg = input('Enter \'yes\' to update:')
             if msg.strip().upper() == 'YES':
-                my_update.download(background=False)
-                while not my_update.is_downloaded():
-                    time.sleep(.25)
-                my_update.extract()
-                dir = my_update.update_folder
-                # print(my_update.update_folder, my_update.filename)
-                # opening the zip file in read mode.
-                with zipfile.ZipFile(my_update.update_folder + '/' + my_update.filename, "r") as zf:
-                    zf.extractall(my_update.update_folder)
-                src = my_update.update_folder + '/' + my_update.app_name
-                dst = os.getcwd()
-                try:
-                    shutil.copytree(src, dst, dirs_exist_ok=True, copy_function=shutil.copyfile)
-                    shutil.rmtree(src)
-                    cmd = os.getcwd() + '/TradeEngine.exe'
-                    os.startfile(cmd)
-                except shutil.Error:
-                    shutil.rmtree(src)
-                    print('Could Not Copy all Files. Checking for Binary Update')
-                    app_update = check_for_update(te_name, te_version)
-                    if isinstance(app_update, pyupdater.client.updates.AppUpdate):  # AppUpdate, LibUpdate
-                        print('Binary Update Found. Downloading...')
-                        app_update.download(background=False)
-                        while not app_update.is_downloaded():
-                            time.sleep(.25)
-                        app_update.extract_restart()
+                if isinstance(my_update, pyupdater.client.updates.LibUpdate):  # AppUpdate, LibUpdate
+                    my_update.download(background=False)
+                    while not my_update.is_downloaded():
+                        time.sleep(.25)
+                    my_update.extract()
+                    dir = my_update.update_folder
+                    # print(my_update.update_folder, my_update.filename)
+                    # opening the zip file in read mode.
+                    with zipfile.ZipFile(my_update.update_folder + '/' + my_update.filename, "r") as zf:
+                        zf.extractall(my_update.update_folder)
+                    src = my_update.update_folder + '/' + my_update.app_name
+                    dst = os.getcwd()
+                    try:
+                        shutil.copytree(src, dst, dirs_exist_ok=True, copy_function=shutil.copyfile)
+                        shutil.rmtree(src)
+                        cmd = os.getcwd() + '/TradeEngine.exe'
+                        os.startfile(cmd)
+                    except shutil.Error:
+                        shutil.rmtree(src)
+                        print('Could Not Copy all Files. Checking for Binary Update')
+                        app_update = check_for_update(te_name, te_version)
+                        if isinstance(app_update, pyupdater.client.updates.AppUpdate):  # AppUpdate, LibUpdate
+                            print('Binary Update Found. Downloading...')
+                            app_update.download(background=False)
+                            while not app_update.is_downloaded():
+                                time.sleep(.25)
+                            app_update.extract_restart()
 
-        elif isinstance(my_update, pyupdater.client.updates.AppUpdate):  # AppUpdate, LibUpdate
-            print('Binary Update Found. Download and restart?')
-            msg = input('Enter \'yes\' to update:')
-            if msg.strip().upper() == 'YES':
-                my_update.download(background=False)
-                while not my_update.is_downloaded():
-                    time.sleep(.25)
-                my_update.extract_restart()
+                elif isinstance(my_update, pyupdater.client.updates.AppUpdate):  # AppUpdate, LibUpdate
+                    print('Binary Update Found. Download and restart?')
+                    msg = input('Enter \'yes\' to update:')
+                    if msg.strip().upper() == 'YES':
+                        my_update.download(background=False)
+                        while not my_update.is_downloaded():
+                            time.sleep(.25)
+                        my_update.extract_restart()
+
+            else:
+                TE = TradeEngine()
+                TE.run()
+
+                store = get_store('Log')
+                date = time.strftime('%I:%M:%S %p %m/%d/%y')
+                store[date] = {}
+                i = 0
+                for m in TE.log_msgs:
+                    store[date][i] = m
+                    i += 1
+                save_store('Log', store)
 
         else:
             TE = TradeEngine()
@@ -137,7 +151,6 @@ if __name__ == "__main__":
             for m in TE.log_msgs:
                 store[date][i] = m
                 i += 1
-
             save_store('Log', store)
 
     except Exception as e:
