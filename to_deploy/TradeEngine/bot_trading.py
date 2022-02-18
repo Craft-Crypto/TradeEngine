@@ -154,111 +154,115 @@ async def check_card_trade(coin_card, ohlc, *args):
 
 
 async def make_bot_buy(self, coin_card):
-    # print('trying to buy')
-    # cp for advanced bot is in card. for bb it is in args
-    coin = coin_card.coin
-    pair = coin_card.pair
-    kind = coin_card.kind
+    try:
+        # print('trying to buy')
+        # cp for advanced bot is in card. for bb it is in args
+        coin = coin_card.coin
+        pair = coin_card.pair
+        kind = coin_card.kind
 
-    cp = coin + '/' + pair
-    ex = self.exchange_selector(coin_card.exchange)
-    buy_amt = 0
-    await self.a_debit_exchange(ex, 1)
+        cp = coin + '/' + pair
+        ex = self.exchange_selector(coin_card.exchange)
+        buy_amt = 0
+        await self.a_debit_exchange(ex, 1)
 
-    info = ex.market(cp)
-    min_coin_amt = float(info['limits']['amount']['min'])
-    min_cost_amt = float(info['limits']['cost']['min'])
-    price = float(ex.prices[cp.replace('/', '')])
+        info = ex.market(cp)
+        min_coin_amt = float(info['limits']['amount']['min'])
+        min_cost_amt = float(info['limits']['cost']['min'])
+        price = float(ex.prices[cp.replace('/', '')])
 
-    if not price:
-        # print(ex.prices)
-        msg = kind + ' attempted to buy ' + cp + ' But no price has been recorded.'
-        await self.my_msg(msg, verbose=True, to_broad=True)
-        coin_card.buy_now = False
-        return
-
-    num_coin_on_cost = min_cost_amt / price
-    while num_coin_on_cost > min_coin_amt:
-        min_coin_amt += float(info['limits']['amount']['min'])
-    # print(coin_card.pair, ex.balance)
-    pair_bal = float(ex.balance[coin_card.pair]) * .99
-    msg = 'Balance Data for ' + cp + ': \nPair Balance: ' + str(pair_bal) + '\nMin Trade Amount: ' + str(min_cost_amt)
-    await self.my_msg(msg, verbose=True)
-
-    if pair_bal > min_cost_amt:
-        # get how much to buy
-        pair_amt = 0  # of pair
-        coin_amt = 0  # of coin, what we are going to use to buy
-        if is_float(coin_card.pair_per):
-            # percentage of balance
-            pair_amt = float(coin_card.pair_per) / 100 * pair_bal
-            coin_amt = pair_amt / price
-            if min_coin_amt > coin_amt:
-                coin_amt = min_coin_amt
-        elif is_float(coin_card.pair_amt):
-            pair_amt = float(coin_card.pair_amt)
-            coin_amt = pair_amt / price
-            if min_coin_amt > coin_amt:
-                coin_amt = min_coin_amt
-        elif is_float(coin_card.pair_minmult):
-            # pair_amt = float(card.pair_minmult.strip('x')) * min_cost_amt
-            coin_amt = float(coin_card.pair_minmult.strip('x')) * min_coin_amt
-
-        coin_amt = float(ex.amount_to_precision(cp, coin_amt * self.sell_mod))
-        # print(coin_amt, min_coin_amt, min_cost_amt, pair_bal, coin_card.pair_minmult)
-        if coin_amt:
-            msg = 'Trade Data for ' + cp + ': \nCoin Amount: ' + str(coin_amt) + '\nPair Amount: ' + str(pair_amt)
-            await self.my_msg(msg, verbose=True)
-
-            try:
-                ordr = await ex.create_market_buy_order(cp, coin_amt)
-            except Exception as e:
-                if 'MIN_NOTIONAL' in str(e) or 'insufficient balance' in str(e) or '1013' in str(e):
-                    msg = 'Trade Error: Too Low of trade amount. Trying to trade all...'
-                    await self.my_msg(msg, verbose=True, to_broad=True)
-                    ordr = await self.try_trade_all(ex, cp, True)
-                else:
-                    msg = kind + ' error in making buy of ' + cp + ': ' + str(e)
-                    coin_card.active = False
-                    await broadcast({'action': 'update_cc', 'card': coin_card.to_dict()})
-                    await self.my_msg(msg, to_tele=True, to_broad=True)
-                    ordr = None
-                    return
-
-            msg = 'Order Details: ' + str(ordr)
-            await self.my_msg(msg, verbose=True)
-            if ordr:
-                if is_float(ordr['average']):
-                    pr = copy_prec(ordr['average'], '.11111111')
-                elif is_float(ordr['price']):
-                    pr = copy_prec(ordr['price'], '.11111111')
-                else:
-                    pr = str(ex.prices[cp.replace('/', '')])
-
-                if is_float(ordr['filled']):
-                    buy_amount = float(ordr['filled'])
-                else:
-                    buy_amount = coin_amt
-
-                # Now it is time to add our buy to the stash
-                await self.add_trade_card(cp, coin_card, pr, buy_amount)
-
-                msg = kind + ' bought ' + str(buy_amount) + ' ' + coin + ' at ' + str(pr) + ' ' + pair + '.'
-                await self.my_msg(msg, to_tele=True, to_broad=True)
-                await self.gather_update_bals(str(ex))
-            # elif not args:
-            #     card.active = False
+        if not price:
+            # print(ex.prices)
+            msg = kind + ' attempted to buy ' + cp + ' But no price has been recorded.'
+            await self.my_msg(msg, verbose=True, to_broad=True)
             coin_card.buy_now = False
+            return
+
+        num_coin_on_cost = min_cost_amt / price
+        while num_coin_on_cost > min_coin_amt:
+            min_coin_amt += float(info['limits']['amount']['min'])
+        # print(coin_card.pair, ex.balance)
+        pair_bal = float(ex.balance[coin_card.pair]) * .99
+        msg = 'Balance Data for ' + cp + ': \nPair Balance: ' + str(pair_bal) + '\nMin Trade Amount: ' + str(min_cost_amt)
+        await self.my_msg(msg, verbose=True)
+
+        if pair_bal > min_cost_amt:
+            # get how much to buy
+            pair_amt = 0  # of pair
+            coin_amt = 0  # of coin, what we are going to use to buy
+            if is_float(coin_card.pair_per):
+                # percentage of balance
+                pair_amt = float(coin_card.pair_per) / 100 * pair_bal
+                coin_amt = pair_amt / price
+                if min_coin_amt > coin_amt:
+                    coin_amt = min_coin_amt
+            elif is_float(coin_card.pair_amt):
+                pair_amt = float(coin_card.pair_amt)
+                coin_amt = pair_amt / price
+                if min_coin_amt > coin_amt:
+                    coin_amt = min_coin_amt
+            elif is_float(coin_card.pair_minmult):
+                # pair_amt = float(card.pair_minmult.strip('x')) * min_cost_amt
+                coin_amt = float(coin_card.pair_minmult.strip('x')) * min_coin_amt
+
+            coin_amt = float(ex.amount_to_precision(cp, coin_amt * self.sell_mod))
+            # print(coin_amt, min_coin_amt, min_cost_amt, pair_bal, coin_card.pair_minmult)
+            if coin_amt:
+                msg = 'Trade Data for ' + cp + ': \nCoin Amount: ' + str(coin_amt) + '\nPair Amount: ' + str(pair_amt)
+                await self.my_msg(msg, verbose=True)
+
+                try:
+                    ordr = await ex.create_market_buy_order(cp, coin_amt)
+                except Exception as e:
+                    if 'MIN_NOTIONAL' in str(e) or 'insufficient balance' in str(e) or '1013' in str(e):
+                        msg = 'Trade Error: Too Low of trade amount. Trying to trade all...'
+                        await self.my_msg(msg, verbose=True, to_broad=True)
+                        ordr = await self.try_trade_all(ex, cp, True)
+                    else:
+                        msg = kind + ' error in making buy of ' + cp + ': ' + str(e)
+                        coin_card.active = False
+                        await broadcast({'action': 'update_cc', 'card': coin_card.to_dict()})
+                        await self.my_msg(msg, to_tele=True, to_broad=True)
+                        ordr = None
+                        return
+
+                msg = 'Order Details: ' + str(ordr)
+                await self.my_msg(msg, verbose=True)
+                if ordr:
+                    if is_float(ordr['average']):
+                        pr = copy_prec(ordr['average'], '.11111111')
+                    elif is_float(ordr['price']):
+                        pr = copy_prec(ordr['price'], '.11111111')
+                    else:
+                        pr = str(ex.prices[cp.replace('/', '')])
+
+                    if is_float(ordr['filled']):
+                        buy_amount = float(ordr['filled'])
+                    else:
+                        buy_amount = coin_amt
+
+                    # Now it is time to add our buy to the stash
+                    await self.add_trade_card(cp, coin_card, pr, buy_amount)
+
+                    msg = kind + ' bought ' + str(buy_amount) + ' ' + coin + ' at ' + str(pr) + ' ' + pair + '.'
+                    await self.my_msg(msg, to_tele=True, to_broad=True)
+                    await self.gather_update_bals(str(ex))
+                # elif not args:
+                #     card.active = False
+                coin_card.buy_now = False
+
+            else:
+                msg = 'Error: Could not determine Coin amount for ' + cp
+                await self.my_msg(msg, to_tele=True, to_broad=True)
 
         else:
-            msg = 'Error: Could not determine Coin amount for ' + cp
-            await self.my_msg(msg, to_tele=True, to_broad=True)
+            msg = f'{kind} attempted to buy {cp} with {str(pair_bal)} {pair}. Minimum Amount is {min_cost_amt} {pair}'
 
-    else:
-        msg = f'{kind} attempted to buy {cp} with {str(pair_bal)} {pair}. Minimum Amount is {min_cost_amt} {pair}'
+            await self.my_msg(msg, to_tele=True)
 
-        await self.my_msg(msg, to_tele=True)
-
+    except Exception as e:
+        msg = 'Error in Trying to buy: ' + str(e)
+        await self.my_msg(msg, verbose=True)
     # if not args:
     #     for old_card in self.ab_cards:
     #         if old_card.my_id == card.my_id:
