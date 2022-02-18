@@ -371,6 +371,9 @@ async def ws_v2(queue):
                                  'min_cost': ''
                                  }
 
+            elif data['action'] == 'save':
+                await engine_api.worker.save()
+
             if send_data:
                 try:
                     await websocket.send_json(data | send_data)
