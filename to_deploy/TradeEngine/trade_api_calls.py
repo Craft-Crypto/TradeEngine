@@ -188,9 +188,10 @@ async def ws_v2(queue):
                 i = 0
                 for card in engine_api.worker.bb_trades:
                     if card.my_id == data['my_id']:
-                        card.sell_now = True
-                        await engine_api.worker.do_check_trade_sells(engine_api.worker.bb_trades)
-                        break
+                        if not card.sell_now:
+                            card.sell_now = True
+                            await engine_api.worker.do_check_trade_sells(engine_api.worker.bb_trades)
+                            break
                     i += 1
                 i = 0
                 for card in engine_api.worker.ab_trades:

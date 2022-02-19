@@ -77,10 +77,10 @@ def print_status_info(info):
 
 if __name__ == "__main__":
     te_name = 'TradeEngine'
-    te_version = '1.0.7'
+    te_version = '1.0.8'
 
     try:
-        print('Welcome to TradeCraft Lite v' + te_version)
+        print(f'Welcome to {te_name} v{te_version}')
         print('Checking for updates...')
 
         # uncomment this for automatic updates on packaged versions

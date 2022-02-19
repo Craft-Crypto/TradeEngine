@@ -43,32 +43,31 @@ from .trade_api_calls import broadcast
 async def check_bot_cards(self, candle):
     bb_cards = [card for card in self.bb_cards if card.candle == candle]
     tasks = []
-    self.bb_active_trades = '0'
+    self.bb_active_trades = 0
     for tc in self.bb_trades:
         if not tc.sold:
-            self.bb_active_trades = str(int(self.bb_active_trades) + 1)
+            self.bb_active_trades += 1
 
     if self.bb_active and bb_cards:
         for card in bb_cards:
-            tasks.append(asyncio.create_task(self.do_check_bot_cards(candle, card, self.bb_trades,
-                                                                     self.bb_trade_limit, self.bb_active_trades)))
+            tasks.append(asyncio.create_task(self.do_check_bot_cards(candle, card, self.bb_trades)))
         data = await asyncio.gather(*tasks)
         # await self.do_check_bot_cards(candle, card, self.bb_trades, self.bb_trade_limit, self.bb_active_trades)
     tasks = []
-    self.ab_active_trades = '0'
+    self.ab_active_trades = 0
     for tc in self.ab_trades:
         if not tc.sold:
-            self.ab_active_trades = str(int(self.ab_active_trades) + 1)
+            self.ab_active_trades += 1
     ab_cards = [card for card in self.ab_cards if card.candle == candle]
     if self.ab_active and ab_cards:
         for card in ab_cards:
-            tasks.append(asyncio.create_task(self.do_check_bot_cards(candle, card, self.ab_trades,
-                                                                     self.ab_trade_limit, self.ab_active_trades)))
+            tasks.append(asyncio.create_task(self.do_check_bot_cards(candle, card, self.ab_trades)))
         data = await asyncio.gather(*tasks)
 
 
-async def do_check_bot_cards(self, candle, coin_card, trades, trade_limit, count):
-    # We can gain some effeciency by checking on the cards with trades first, and then going on to others. this way if over limit, that is cool.
+async def do_check_bot_cards(self, candle, coin_card, trades):
+    # We can gain some effeciency by checking on the cards with trades first, and then going on to others.
+    # this way if over limit, that is cool.
     ex = self.exchange_selector(coin_card.exchange)
     if coin_card.active: # ex.balance[card.pair] > 0 and card.active:  # Can be better by determining min buy and checking this first before continuing
         for coin in coin_card.coin.split(','):
@@ -80,6 +79,7 @@ async def do_check_bot_cards(self, candle, coin_card, trades, trade_limit, count
                 ohlc = await self.async_get_ohlc(ex, cp, candle, 1000)
                 make_buy = False
                 make_sell = False
+                dca_trade = False
                 try:
                     if ohlc:
                         make_buy, make_sell, price = await check_card_trade(coin_card, ohlc)
@@ -89,8 +89,8 @@ async def do_check_bot_cards(self, candle, coin_card, trades, trade_limit, count
                     coin_card.active = False
                     await broadcast({'action': 'update_cc', 'card': coin_card.to_dict()})
 
-                dca_trade = False
                 if make_buy:
+                    # Check DCA. Trade limit will be checked right before the bot can buy
                     for tc in trades:
                         if (tc.coin == coin_card.coin and tc.pair == coin_card.pair
                                 and not tc.sold and tc.exchange == coin_card.exchange):
@@ -100,6 +100,7 @@ async def do_check_bot_cards(self, candle, coin_card, trades, trade_limit, count
                                     msg = 'Wanted to buy {0}, but price is not below buyback price'.format(cp)
                                     await self.my_msg(msg, verbose=True)
                                 else:
+                                    make_buy = True
                                     dca_trade = True
                             else:
                                 make_buy = False
@@ -107,21 +108,13 @@ async def do_check_bot_cards(self, candle, coin_card, trades, trade_limit, count
                                 await self.my_msg(msg, verbose=True)
                             break
 
-                num_check = True
-                if is_float(trade_limit):
-                    if float(count) >= float(trade_limit):
-                        num_check = False
-
-                # print('3 checks', make_buy, num_check, dca_trade)
-
-                if make_buy and (num_check or dca_trade):
+                if make_buy:
                     if is_float(price):
                         msg = 'Making a Buy for ' + cp
                         await self.my_msg(msg, verbose=True)
-                        count = str(int(count) + 1)
-                        await self.make_bot_buy(coin_card)
+                        await self.make_bot_buy(coin_card, dca_trade)
 
-                        # print('2nd count and limit', count, trade_limit)
+                    # print('2nd count and limit', count, trade_limit)
                     else:
                         msg = 'Wanted to by ' + cp + ' but no price data yet'
                         await self.my_msg(msg, verbose=True)
@@ -153,7 +146,7 @@ async def check_card_trade(coin_card, ohlc, *args):
     return make_buy, make_sell, p
 
 
-async def make_bot_buy(self, coin_card):
+async def make_bot_buy(self, coin_card, dca_trade):
     try:
         # print('trying to buy')
         # cp for advanced bot is in card. for bb it is in args
@@ -212,7 +205,34 @@ async def make_bot_buy(self, coin_card):
                 await self.my_msg(msg, verbose=True)
 
                 try:
-                    ordr = await ex.create_market_buy_order(cp, coin_amt)
+                    # check to see if this goes past trade limit:
+                    # we want to buy, but we need to check number of trades that are active
+                    make_buy = True
+                    count = 0
+                    if coin_card.kind == 'Basic Bot' and is_float(self.bb_trade_limit):
+                        if self.bb_active_trades >= float(self.bb_trade_limit):
+                            make_buy = False
+                    if coin_card.kind == 'Advanced Bot' and is_float(self.ab_trade_limit):
+                        if self.ab_active_trades >= float(self.ab_trade_limit):
+                            make_buy = False
+
+                    if not dca_trade and make_buy:
+                        if coin_card.kind == 'Basic Bot':
+                            self.bb_active_trades += 1
+                        else:
+                            self.ab_active_trades += 1
+
+                    if not make_buy and not dca_trade:
+                        msg = f'Wanted to buy {cp}, but Trades are already at the limit'
+                        await self.my_msg(msg, verbose=True)
+
+                    if make_buy or dca_trade:
+                        ordr = await ex.create_market_buy_order(cp, coin_amt)
+                    else:
+                        ordr = None
+                    # Then we check to see if it is a dca, if it is, we can buy.
+                    # This can override trade limit as we are not adding a new coin
+
                 except Exception as e:
                     if 'MIN_NOTIONAL' in str(e) or 'insufficient balance' in str(e) or '1013' in str(e):
                         msg = 'Trade Error: Too Low of trade amount. Trying to trade all...'

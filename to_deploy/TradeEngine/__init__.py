@@ -80,7 +80,7 @@ class TradeEngine(object):
         self.bb_strat.title = 'RSI DCA Minute Trading'
         self.bb_cards = []
         self.bb_trades = []
-        self.bb_active_trades = '0'
+        self.bb_active_trades = 0
         self.bb_trade_limit = '7'
         self.bb_active = False
         self.bb_sells_lock = False
@@ -88,7 +88,7 @@ class TradeEngine(object):
         # Setup Advanced Bot
         self.ab_cards = []
         self.ab_trades = []
-        self.ab_active_trades = '0'
+        self.ab_active_trades = 0
         self.ab_trade_limit = '7'
         self.ab_active = False
         self.ab_sells_lock = False
@@ -713,7 +713,7 @@ class TradeEngine(object):
                 else:
                     break
 
-            # print('time took', time.time() - t)
+            # print('time took', cp, time.time() - t)
             return ohlc
 
         except Exception as e:
