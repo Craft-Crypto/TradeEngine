@@ -448,7 +448,7 @@ async def get_bb_data(*args):
 @engine_api.route(pfx + '/bb_active', methods=['GET'])
 async def set_bb_active():
     engine_api.worker.bb_active = not engine_api.worker.bb_active
-    await engine_api.worker('Basic Bot activation toggled', to_tele=False, to_broad=False)
+    await engine_api.worker.my_msg('Basic Bot activation toggled', to_tele=False, to_broad=False)
     # print('flipped bb')
     return 'flipped'
 
@@ -456,7 +456,7 @@ async def set_bb_active():
 async def set_ab_active():
     engine_api.worker.ab_active = not engine_api.worker.ab_active
     # print('flipped ab')
-    await engine_api.worker('Advanced Bot activation toggled', to_tele=False, to_broad=False)
+    await engine_api.worker.my_msg('Advanced Bot activation toggled', to_tele=False, to_broad=False)
     return 'flipped'
 
 @engine_api.route(pfx + '/ab_data', methods=['GET'])

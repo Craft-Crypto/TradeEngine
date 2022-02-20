@@ -246,9 +246,9 @@ async def make_bot_buy(self, coin_card, dca_trade=False):
                         ordr = None
                         return
 
-                msg = 'Order Details: ' + str(ordr)
-                await self.my_msg(msg, verbose=True)
                 if ordr:
+                    msg = 'Order Details: ' + str(ordr)
+                    await self.my_msg(msg, verbose=True)
                     if is_float(ordr['average']):
                         pr = copy_prec(ordr['average'], '.11111111')
                     elif is_float(ordr['price']):
@@ -337,6 +337,18 @@ async def add_trade_card(self, cp, coin_card, buy_price, buy_amount):
     t.childs.append(rr)
 
     trades.append(t)
+
+    if coin_card.kind == 'Basic Bot':
+        self.bb_active_trades = 0
+        for tc in self.bb_trades:
+            if not tc.sold:
+                self.bb_active_trades += 1
+    else:
+        self.ab_active_trades = 0
+        for tc in self.ab_trades:
+            if not tc.sold:
+                self.ab_active_trades += 1
+
     await self.sync_trades_to_cards()
 
     if coin_card.kind == 'Basic Bot':
@@ -478,6 +490,7 @@ async def do_check_trade_sells(self, trades):
                 await broadcast({'action': 'update_tc', 'card': tc.to_dict()})
 
         # Finally, we are past all the filters, now we can see if we can make it happen
+
         if sell:
             # time to sell. let's figure out how much we are selling
             sell_amt = 0
@@ -492,20 +505,23 @@ async def do_check_trade_sells(self, trades):
                       tc.now_price + '\nBuy Price: ' + tc.buy_price
                 await self.my_msg(msg, verbose=True)
                 try:
-                    ordr = await ex.create_market_sell_order(sym, sell_amt)
-                    tc.sell_now = False
-                    tc.sold = True
+                    # print('selling', sym, tc.sold)
+                    if not tc.sold:
+                        tc.sell_now = False
+                        tc.sold = True
+                        ordr = await ex.create_market_sell_order(sym, sell_amt)
+                    else:
+                        ordr = None
                     # print(ordr)
                     await self.save()
-                    # print('DDDDDDDDDDDDDDDDDDDDDOOOOOOOOOOOONNNNNNNNNNNNNNEEEEEEEEEEEEEE')
                 except Exception as e:
                     # print(e)
                     if 'MIN_NOTIONAL' in str(e) or 'insufficient balance' in str(e) or '1013' in str(e):
                         msg = 'Trade Error: Too Low of trade amount. Trying to trade all...'
                         await self.my_msg(msg, verbose=True, to_broad=True)
-                        ordr = await self.try_trade_all(ex, sym, False)
                         tc.sell_now = False
                         tc.sold = True
+                        ordr = await self.try_trade_all(ex, sym, False)
                         await self.save()
                     else:
                         msg = tc.kind + ' error in checking sell of ' + sym + ': ' + str(e)
@@ -515,9 +531,9 @@ async def do_check_trade_sells(self, trades):
                         await broadcast({'action': 'update_tc', 'card': tc.to_dict()})
                         await self.my_msg(msg, to_tele=True, to_broad=True)
 
-                msg = tc.kind + ' Order Details: ' + str(ordr)
-                await self.my_msg(msg, verbose=True)
                 if ordr:
+                    msg = tc.kind + ' Order Details: ' + str(ordr)
+                    await self.my_msg(msg, verbose=True)
                     if is_float(ordr['average']):
                         pr = copy_prec(ordr['average'], '.11111111')
                     elif is_float(ordr['price']):
@@ -539,14 +555,14 @@ async def do_check_trade_sells(self, trades):
                     gain = float(tc.sold_price) / float(tc.buy_price) * 100 - 100
                     tc.gl_per = str(round(gain, 2))
                     await broadcast({'action': 'update_tc', 'card': tc.to_dict()})
-                else:
-                    tc.sell_now = False
-                    tc.active = False
-                    tc.sold_price = '0'
-                    tc.gl_per = 'Error'
-                    tc.now_price = '0'
-                    tc.sold = True
-                    await broadcast({'action': 'update_tc', 'card': tc.to_dict()})
+                # else:
+                #     tc.sell_now = False
+                #     tc.active = False
+                #     tc.sold_price = '0'
+                #     tc.gl_per = 'Error'
+                #     tc.now_price = '0'
+                #     tc.sold = True
+                #     await broadcast({'action': 'update_tc', 'card': tc.to_dict()})
 
                 await self.update_card_trade_data(tc)
                 await self.gather_update_bals(str(ex))
@@ -649,9 +665,9 @@ async def quick_trade(self, *args):
                     ordr = None
                     self.pause_msg = False
 
-            msg = 'Quick Trade Order Details: ' + str(ordr)
-            await self.my_msg(msg, verbose=True)
             if ordr:
+                msg = 'Quick Trade Order Details: ' + str(ordr)
+                await self.my_msg(msg, verbose=True)
                 if is_float(ordr['average']):
                     pr = copy_prec(ordr['average'], '.11111111')
                 elif is_float(ordr['price']):
