@@ -531,7 +531,7 @@ class TradeEngine(object):
 
         for exchange in my_exchanges:
             ex = self.exchange_selector(exchange)
-            if ex.apiKey and ex.secret:
+            if ex.apiKey and ex.secret and ex.prices:
                 # print(str(exchange), exchange.balance)
                 # Now go through and figure out usd and btc balances
 
@@ -572,7 +572,7 @@ class TradeEngine(object):
                 # if 'BTC' in exchange.balance:
                 #     btc_bal += float(exchange.balance['BTC'])
                 try:
-                    if ex == 'Binance':
+                    if str(ex) == 'Binance':
                         usd_bal = btc_bal * float(ex.prices['BTCUSDT'])
                     else:
                         usd_bal = btc_bal * float(ex.prices['BTCUSD'])
