@@ -146,7 +146,7 @@ async def check_card_trade(coin_card, ohlc, *args):
     return make_buy, make_sell, p
 
 
-async def make_bot_buy(self, coin_card, dca_trade):
+async def make_bot_buy(self, coin_card, dca_trade=False):
     try:
         # print('trying to buy')
         # cp for advanced bot is in card. for bb it is in args
