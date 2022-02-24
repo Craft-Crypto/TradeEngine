@@ -257,8 +257,7 @@ async def manage_input(self, msg):
 
     elif msg == 'clock':
         msg = 'Binance Servers require requests to be within 1000ms of their server time. However, there are times' \
-              'when a computer\'s time may shift. Changing your computer\'s clock is not something ' \
-              'TradeEngine can do.' \
+              'when a computer\'s time may shift.' \
               '\n Here are some ways that you can try and fix it on your computer:' \
               '\n Method 1: From control panel > date and time > internet time. ' \
               'Then change the server to >>>> time.nist.gov' \
