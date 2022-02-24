@@ -38,7 +38,7 @@ import time
 import ccxt.async_support as a_ccxt
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
-from CraftCrypto_Helpers.Helpers import get_store, save_store, archive_store, delete_store
+from CraftCrypto_Helpers.Helpers import get_store, save_store, archive_store, delete_store, dir_path
 from TradeEngine.tele_api_calls import TeleBot
 from TradeEngine.trade_api_calls import engine_api
 from CraftCrypto_Helpers.BaseRecord import BaseRecord, convert_record
@@ -319,6 +319,7 @@ async def initialize(self):
     asyncio.ensure_future(self.check_prices_sells())
     self.sched.start()
     await self.my_msg('Initialization Complete.')
+    await self.my_msg(f'TradeEngine Data Can be found in {dir_path}')
     await self.my_msg('*******')
     await self.my_msg('Enter \'setup\' to set up trading.')
 

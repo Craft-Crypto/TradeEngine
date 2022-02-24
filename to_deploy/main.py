@@ -87,13 +87,17 @@ if __name__ == "__main__":
         my_update = check_for_update(te_name, te_version)
 
         if my_update:
-            print('Library Update Found. Download and restart?')
+            print('App Update Found. Download and restart?')
             msg = input('Enter \'yes\' to update:')
             if msg.strip().upper() == 'YES':
+                print('*****Please Wait and Let App Restart By Itself.')
+                print('*****You May Be Prompted by Your System to Allow TradeEngine to Update.')
+                print('*****If Persistent Errors Occur, Please Redownload Installer from craft-crypto.com.')
+                print('*****Otherwise, Contact Us at brewers@craft-crypto.com')
                 if isinstance(my_update, pyupdater.client.updates.LibUpdate):  # AppUpdate, LibUpdate
                     my_update.download(background=False)
                     while not my_update.is_downloaded():
-                        time.sleep(.25)
+                        time.sleep(.5)
                     my_update.extract()
                     dir = my_update.update_folder
                     # print(my_update.update_folder, my_update.filename)
