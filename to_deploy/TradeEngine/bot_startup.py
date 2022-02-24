@@ -110,7 +110,7 @@ async def initialize(self):
 
     await self.my_msg('Loading Strategies...')
     store = get_store('BasicStrats')
-    if not store:
+    if not store or not '4' in store:
         strat = BaseRecord()
         strat.title = 'RSI DCA Minute Trading'
         strat.description = ('This strategy uses 1 minute candles and the Relative Strength Index to ' +
@@ -123,36 +123,49 @@ async def initialize(self):
         strat.rsi_buy = "30"
 
         strat1 = BaseRecord()
-        strat1.title = 'MACD Stoch Long Haul'
-        strat1.description = ('A Strategy that works on the 4 hour candle, but tends to find just the ' +
+        strat1.title = 'Cross and Pop'
+        strat1.description = ('Combining Simple Moving Average Crosses with Trailing Stop Losses and ' +
+                              'Down Cost Averaging is a great way to earning profit off a volatile market in ' +
+                              'the 5 minute candle.')
+        strat1.candle = "5m"
+        strat1.take_profit_per = "2"
+        strat1.trail_per = ".5"
+        strat1.dca_buyback_per = "10"
+        strat1.sma_cross_fast = "17"
+        strat1.sma_cross_slow = "55"
+        strat1.sma_cross_buy = "Yes"
+
+        strat2 = BaseRecord()
+        strat2.title = 'Buy The Dip'
+        strat2.description = ('This works on the 30min candle to buy when the price dips 10% past the 100 EMA. ' +
+                              'It the sets a decent Take Profit with a trail and a DCA.')
+        strat2.candle = "30m"
+        strat2.take_profit_per = "6"
+        strat2.trail_per = "2"
+        strat2.dca_buyback_per = "15"
+        strat2.ema = "100"
+        strat2.ema_percent = "10"
+        strat2.ema_buy = "Yes"
+
+        strat3 = BaseRecord()
+        strat3.title = 'MACD Stoch Long Haul'
+        strat3.description = ('A Strategy that works on the 4 hour candle, but tends to find just the ' +
                               'perfect time to buy. The Long Haul waits to buy when the MACD to cross up and ' +
                               'be in the red, with a Stoch under 30, and keeps a moderate take profit, stop ' +
                               'loss, and trail.')
-        strat1.candle = "4h"
-        strat1.take_profit_per = "10"
-        strat1.trail_per = "1"
-        strat1.stop_per = "20"
-        strat1.macd_cross_buy = "Yes"
-        strat1.macd_color_buy = "Yes"
-        strat1.stoch_val_buy = "30"
-
-        strat2 = BaseRecord()
-        strat2.title = 'Cross and Pop'
-        strat2.description = ('Combining Simple Moving Average Crosses with Trailing Stop Losses and ' +
-                              'Down Cost Averaging is a great way to earning profit off a volatile market in ' +
-                              'the 5 minute candle.')
-        strat2.candle = "5m"
-        strat2.take_profit_per = "2"
-        strat2.trail_per = ".5"
-        strat2.dca_buyback_per = "10"
-        strat2.sma_cross_fast = "17"
-        strat2.sma_cross_slow = "55"
-        strat2.sma_cross_buy = "Yes"
+        strat3.candle = "4h"
+        strat3.take_profit_per = "10"
+        strat3.trail_per = "1"
+        strat3.stop_per = "20"
+        strat3.macd_cross_buy = "Yes"
+        strat3.macd_color_buy = "Yes"
+        strat3.stoch_val_buy = "30"
 
         strat_store = {'1': strat.to_dict(),
                        '2': strat1.to_dict(),
-                       '3': strat2.to_dict()
-        }
+                       '3': strat2.to_dict(),
+                       '4': strat3.to_dict()
+                      }
         save_store('BasicStrats', strat_store)
 
     await self.my_msg('Loading Saved Trades...')
