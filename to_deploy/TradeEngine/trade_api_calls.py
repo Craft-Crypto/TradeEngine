@@ -88,9 +88,9 @@ async def ws_v2(queue):
                 send_data = await get_bb_data(True)
             elif data['action'] == 'bb_now':
                 engine_api.worker.bb_active = True
-                await engine_api.worker.check_bot_cards(engine_api.worker.bb_strat.candle)
-                data['action'] = 'bb_data'
-                send_data = await get_bb_data(True)
+                asyncio.ensure_future(engine_api.worker.check_bot_cards(engine_api.worker.bb_strat.candle))
+                # data['action'] = 'bb_data'
+                # send_data = await get_bb_data(True)
 
             elif data['action'] == 'ab_active':
                 await set_ab_active()
@@ -98,6 +98,7 @@ async def ws_v2(queue):
                 send_data = await get_ab_data(True)
 
             elif data['action'] == 'ab_now':
+                print(data)
                 engine_api.worker.ab_active = True
                 # await engine_api.worker.check_bot_cards(engine_api.worker.bb_strat.candle)
                 data['action'] = 'ab_data'
@@ -338,14 +339,14 @@ async def ws_v2(queue):
             elif data['action'] == 'check_limit':
                 ex = engine_api.worker.exchange_selector(data['exchange'])
                 if not data['trade_id'] in ['...', 'Error', '']:
-                    await engine_api.worker.a_debit_exchange(ex, 1)
+                    await engine_api.worker.a_debit_exchange(ex, 1, 'ws check_limit')
                     test = await ex.fetch_order(data['trade_id'], data['cp'].replace('/', ''))
                     send_data = {'status': test['status']}
                     # print(send_data)
 
             elif data['action'] == 'stop_limit':
                 ex = engine_api.worker.exchange_selector(data['exchange'])
-                await engine_api.worker.a_debit_exchange(ex, 1)
+                await engine_api.worker.a_debit_exchange(ex, 1, 'ws stop_limit')
                 try:
                     await ex.cancel_order(data['trade_id'], data['cp'].replace('/', ''))
                     await engine_api.worker.gather_update_bals()
@@ -374,6 +375,10 @@ async def ws_v2(queue):
 
             elif data['action'] == 'save':
                 await engine_api.worker.save()
+
+            elif data['action'] == 'get_waiting':
+                send_data = {'waiting': engine_api.worker.in_waiting}
+                # print(send_data)
 
             if send_data:
                 try:

@@ -157,7 +157,7 @@ async def make_bot_buy(self, coin_card, dca_trade=False):
         cp = coin + '/' + pair
         ex = self.exchange_selector(coin_card.exchange)
         buy_amt = 0
-        await self.a_debit_exchange(ex, 1)
+        await self.a_debit_exchange(ex, 1, 'make_bot_buy')
 
         info = ex.market(cp)
         min_coin_amt = float(info['limits']['amount']['min'])
@@ -505,7 +505,7 @@ async def do_check_trade_sells(self, trades):
                 sell_amt += float(child['amount'])
 
             if sell_amt > 0:
-                await self.a_debit_exchange(ex, 1)
+                await self.a_debit_exchange(ex, 1, 'do_check_trade_sells')
                 sell_amt = float(ex.amount_to_precision(sym, sell_amt * self.sell_mod))
                 msg = 'Time to Sell ' + sym + '!\n Sell Price: ' + tc.take_profit_price + '\nCurrent Price: ' + \
                       tc.now_price + '\nBuy Price: ' + tc.buy_price
@@ -655,7 +655,7 @@ async def quick_trade(self, *args):
             amount = float(ex.balance[cp.split('/')[0]]) * float(amount) / 100
         amount = ex.amount_to_precision(cp, amount * .99)
 
-        await self.a_debit_exchange(ex, 1)
+        await self.a_debit_exchange(ex, 1, 'quick_trade')
 
         price = float(ex.prices[cp.replace('/', '')])
 

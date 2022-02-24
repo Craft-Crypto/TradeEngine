@@ -347,9 +347,9 @@ async def test_apis(self, *args):
         exchange = self.exchange_selector(ex)
         if exchange.apiKey and exchange.secret:
             if str(exchange) in ['Binance', 'Binance US']:
-                await self.a_debit_exchange(exchange, 5)
+                await self.a_debit_exchange(exchange, 5, 'test_apis')
             else:
-                await self.a_debit_exchange(exchange, 1)
+                await self.a_debit_exchange(exchange, 1, 'test_apis')
 
             try:
                 await self.update_bals(exchange)

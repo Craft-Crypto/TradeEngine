@@ -255,6 +255,10 @@ async def manage_input(self, msg):
     elif msg == 'exit':
         self.exit()
 
+    elif msg == 'waiting commands':
+        msg = f'Commands waiting on Exchanges: {str(self.in_waiting)}'
+        await self.my_msg(msg, to_tele=True)
+
     elif msg == 'clock':
         msg = 'Binance Servers require requests to be within 1000ms of their server time. However, there are times' \
               'when a computer\'s time may shift.' \

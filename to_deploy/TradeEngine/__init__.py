@@ -81,7 +81,7 @@ class TradeEngine(object):
         self.bb_cards = []
         self.bb_trades = []
         self.bb_active_trades = 0
-        self.bb_trade_limit = '7'
+        self.bb_trade_limit = '5'
         self.bb_active = False
         self.bb_sells_lock = False
 
@@ -89,7 +89,7 @@ class TradeEngine(object):
         self.ab_cards = []
         self.ab_trades = []
         self.ab_active_trades = 0
-        self.ab_trade_limit = '7'
+        self.ab_trade_limit = '3'
         self.ab_active = False
         self.ab_sells_lock = False
 
@@ -105,6 +105,8 @@ class TradeEngine(object):
         self.tele_bot = None
         self.q = asyncio.queues.Queue()
         self.looking = False  # Input Management
+
+        self.in_waiting = 0
 
     def run(self):
         # print('Im alive')
@@ -416,16 +418,22 @@ class TradeEngine(object):
         else:
             return None, None
 
-    async def a_debit_exchange(self, exchange, deduct):
-        if exchange.rate_limit < deduct:
+    async def a_debit_exchange(self, exchange, deduct, *args):
+        # print('starting debit', args, 'those waiting', self.in_waiting)
+        self.in_waiting += 1
+        await self.my_msg(f'Waiting for {args} command. {str(self.in_waiting)} Commands in Waiting', verbose=True)
+        while exchange.rate_limit < deduct:
             await asyncio.sleep(1)
-            await self.a_debit_exchange(exchange, deduct)
+            # await self.a_debit_exchange(exchange, deduct, True)
         else:
             exchange.rate_limit -= deduct
+        self.in_waiting -= 1
+        await self.my_msg(f'{args} Completed', verbose=True)
+
 
     async def refresh_api(self):
         while self.running:
-            await asyncio.sleep(1.05)
+            await asyncio.sleep(1)
             self.a_binance.rate_limit = 20
             self.a_binanceUS.rate_limit = 20
             self.a_bitmex.rate_limit = 2
@@ -475,9 +483,9 @@ class TradeEngine(object):
     async def update_bals(self, exchange):
         t = time.time()
         if str(exchange) == 'Binance' or str(exchange) == 'Binance US':
-            await self.a_debit_exchange(exchange, 5)
+            await self.a_debit_exchange(exchange, 5, 'update_bals')
         else:
-            await self.a_debit_exchange(exchange, 1)
+            await self.a_debit_exchange(exchange, 1, 'update_bals')
         exchange.balance = {}
         try:
             if exchange.apiKey:
@@ -683,7 +691,7 @@ class TradeEngine(object):
             if args:
                 await self.my_msg('Collecting Candles....', to_tele=True, to_broad=True)
             t = time.time()
-            await self.a_debit_exchange(ex, 1)
+            await self.a_debit_exchange(ex, 1, 'async_ohlc')
 
             if str(ex) == 'Coinbase Pro':
                 ohlc = await ex.fetch_ohlcv(cp, candle, limit=300)
@@ -701,7 +709,7 @@ class TradeEngine(object):
             while len(ohlc) < int(candles_needed):
                 # print('getting more ohlc', len(ohlc))
                 new_ohlc = []
-                await self.a_debit_exchange(ex, 1)
+                await self.a_debit_exchange(ex, 1, 'async_ohlc_2')
                 if str(ex) == 'Coinbase Pro':
                     new_ohlc = await ex.fetch_ohlcv(cp, candle, since=(first - timediff), limit=300)
                     if len(new_ohlc) < 300:
@@ -729,7 +737,7 @@ class TradeEngine(object):
             # ex = self.exchange_selector(exchange)
             if type(ex) == str:
                 ex = self.exchange_selector(ex)
-            await self.a_debit_exchange(ex, 1)
+            await self.a_debit_exchange(ex, 1, 'buy_sell_now')
             price = float(ex.prices[cp.replace('/', '')])
             coin, pair = cp.split('/')
             if percent:
@@ -811,7 +819,7 @@ class TradeEngine(object):
     async def limit_buy_sell_now(self, exchange, cp, is_buy, is_stop, amount, price, leverage, my_id=None, *args):
         try:
             ex = self.exchange_selector(str(exchange))
-            await self.a_debit_exchange(ex, 1)
+            await self.a_debit_exchange(ex, 1, 'limit_buy_sell_now')
             amount = ex.amount_to_precision(cp, amount)
             # print('post amounts', amount, 'buy', is_buy)
             # print('pre limit', cp, is_buy, amount, price)
@@ -900,7 +908,7 @@ class TradeEngine(object):
         try:
             # ex = self.exchange_selector(exchange)
             await self.update_bals(ex)
-            await self.a_debit_exchange(ex, 1)
+            await self.a_debit_exchange(ex, 1, 'try_trade_all')
             coin, pair = cp.split('/')
             try:
                 coin_bal = ex.balance[coin]
@@ -973,9 +981,9 @@ class TradeEngine(object):
         ex = self.exchange_selector(exchange)
         if ex.apiKey and ex.secret:
             if exchange == 'Binance' or exchange == 'Binance US':
-                await self.a_debit_exchange(ex, 10)
+                await self.a_debit_exchange(ex, 10, 'get_trades')
             else:
-                await self.a_debit_exchange(ex, 1)
+                await self.a_debit_exchange(ex, 1, 'get_trades')
             return [market, await ex.fetch_my_trades(market)]
         else:
             return [None, None]
