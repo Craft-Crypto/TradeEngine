@@ -87,6 +87,7 @@ class TeleBot(Bot):
                      {'command': 'ab_detailed_trades', 'description': 'Get Detailed Trades from Advanced Bot'},
                      {'command': 'collect_ab', 'description': 'Clear completed Advanced Bot Trades'},
                      {'command': 'sell_positive_ab', 'description': 'Sell positive Advanced Bot trades'},
+                     {'command': 'clock', 'description': 'Get infomation on how to fix timestamp errors'},
                     ]
         await self.set_my_commands(tele_cmds)
 
@@ -169,6 +170,10 @@ class TeleBot(Bot):
         @self.dp.message_handler(commands=['sell_positive_ab'])
         async def sell_positive_ab(message: types.Message):
             await self.worker.manage_input('sell positive ab')
+
+        @self.dp.message_handler(commands=['clock'])
+        async def clock_cmd(message: types.Message):
+            await self.worker.manage_input('clock')
 
         @self.dp.message_handler(state='*', commands='cancel')
         @self.dp.message_handler(Text(equals='cancel', ignore_case=True), state='*')

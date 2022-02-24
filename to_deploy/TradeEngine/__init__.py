@@ -512,6 +512,9 @@ class TradeEngine(object):
                 msg = 'Error with ' + str(exchange) + ' Balance: Bad Gateway... will try again.'
             else:
                 msg = 'Error with ' + str(exchange) + ' Balance: ' + str(e)
+                if '1000ms ahead' in str(e):
+                    await exchange.load_time_difference()
+                    msg += '. Attempting to resync Clocks. If This error continues, use the clock command to see more.'
             await self.my_msg(msg, to_broad=True, to_tele=True)
 
     async def gather_update_bals(self, *args):

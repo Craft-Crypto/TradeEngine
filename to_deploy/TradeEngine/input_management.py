@@ -255,6 +255,25 @@ async def manage_input(self, msg):
     elif msg == 'exit':
         self.exit()
 
+    elif msg == 'clock':
+        msg = 'Binance Servers require requests to be within 1000ms of their server time. However, there are times' \
+              'when a computer\'s time may shift. Changing your computer\'s clock is not something ' \
+              'TradeEngine can do.' \
+              '\n Here are some ways that you can try and fix it on your computer:' \
+              '\n Method 1: From control panel > date and time > internet time. ' \
+              'Then change the server to >>>> time.nist.gov' \
+              '\n Method 2: From the Run box, enter “services.msc”. This will bring up the Services window. ' \
+              'You can search in the control panel for it as well. ' \
+              'Make sure the \'Windows Time\' service is running. ' \
+              '\nFrom PowerShell as admin, run following commands to sync time:' \
+              '\nnet stop w32time' \
+              '\nw32tm /unregister' \
+              '\nw32tm /register' \
+              '\nnet start w32time' \
+              '\nw32tm /resync'
+
+        await self.my_msg(msg, to_tele=True)
+
 
     #
     #     elif msg[0] == 'check_key':
@@ -399,33 +418,33 @@ async def manage_input(self, msg):
         msg = 'TradeEngine can be fully controlled through TradeCraft Pro. However, the following commands ' \
               'can also be used. Any changes made in TradeEngine will also be reflected in TradeCraft Pro.'
         msg += '\nList of Bot commands:'
-        msg += '\nsetup - Starts the process of setting exchanges and keys. This can be done through TradeCraft Pro'
-        msg += '\nset API keys - Add API Keys for Exchanges'
-        msg += '\nset tele keys - Add Keys for Telegram Integration'
-        msg += '\nset bb strat - Configure the Basic Bot'
-        msg += '\nbb status - Hows the current strategy for the Basic Bot'
-        msg += '\nactivate bb - Start the Basic Bot'
-        msg += '\npause bb - Pause the Basic Bot'
-        msg += '\nbb now - Starts the Basic Bot, and also evaluates all the coins immediately'
-        msg += '\nbb card status - Prints the cards used in Basic Bot trading (not easily readable... yet)'
-        msg += '\nab card status - Prints the cards used in Advanced Bot trading (not easily readable... yet)'
-        msg += '\nactivate ab - Start the Advanced Bot'
-        msg += '\npause ab - Pause the Advanced Bot'
-        msg += '\nbb trades - Prints overview of trades made by Basic Bot'
-        msg += '\nbb detailed trades - Prints detailed overview of trades made by Basic Bot'
-        msg += '\nclear bb trades - Deletes all trades made by Basic Bot'
-        msg += '\ncollect bb - Clears all completed trades made by Basic Bot'
-        msg += '\nsell positive bb - Sells all trades that are positive for Basic Bot'
-        msg += '\nab trades - Prints overview of trades made by Advanced Bot'
-        msg += '\nab detailed trades - Prints detailed overview of trades made by Advanced Bot'
-        msg += '\nclear ab trades - Deletes all trades made by Advanced Bot'
-        msg += '\ncollect ab - Clears all completed trades made by Advanced Bot'
-        msg += '\nsell positive ab - Sells all trades that are positive for Advanced Bot'
-        msg += '\nbalance - Shows current account balances'
-        msg += '\nquick trade - Starts a trade outside of the Bots'
-        msg += '\nsave - Save Data'
-        msg += '\nverbose - Give more detailed running information on the Bot'
-        msg += '\nexit - Closes TradeEngine (ungracefully for now)'
+        msg += '\n>setup - Starts the process of setting exchanges and keys. This can be done through TradeCraft Pro'
+        msg += '\n>set API keys - Add API Keys for Exchanges'
+        msg += '\n>set tele keys - Add Keys for Telegram Integration'
+        msg += '\n>set bb strat - Configure the Basic Bot'
+        msg += '\n>bb status - Hows the current strategy for the Basic Bot'
+        msg += '\n>activate bb - Start the Basic Bot'
+        msg += '\n>pause bb - Pause the Basic Bot'
+        msg += '\n>bb now - Starts the Basic Bot, and also evaluates all the coins immediately'
+        msg += '\n>bb card status - Prints the cards used in Basic Bot trading (not easily readable... yet)'
+        msg += '\n>ab card status - Prints the cards used in Advanced Bot trading (not easily readable... yet)'
+        msg += '\n>activate ab - Start the Advanced Bot'
+        msg += '\n>pause ab - Pause the Advanced Bot'
+        msg += '\n>bb trades - Prints overview of trades made by Basic Bot'
+        msg += '\n>bb detailed trades - Prints detailed overview of trades made by Basic Bot'
+        msg += '\n>clear bb trades - Deletes all trades made by Basic Bot'
+        msg += '\n>collect bb - Clears all completed trades made by Basic Bot'
+        msg += '\n>sell positive bb - Sells all trades that are positive for Basic Bot'
+        msg += '\n>ab trades - Prints overview of trades made by Advanced Bot'
+        msg += '\n>ab detailed trades - Prints detailed overview of trades made by Advanced Bot'
+        msg += '\n>clear ab trades - Deletes all trades made by Advanced Bot'
+        msg += '\n>collect ab - Clears all completed trades made by Advanced Bot'
+        msg += '\n>sell positive ab - Sells all trades that are positive for Advanced Bot'
+        msg += '\n>balance - Shows current account balances'
+        msg += '\n>quick trade - Starts a trade outside of the Bots'
+        msg += '\n>save - Save Data'
+        msg += '\n>verbose - Give more detailed running information on the Bot'
+        msg += '\n>exit - Closes TradeEngine (ungracefully for now)'
         msg += '\nFor more information, please visit craft-crypto.com'
         await self.my_msg(msg, False, False)
     else:

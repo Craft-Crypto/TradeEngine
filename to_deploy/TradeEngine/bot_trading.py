@@ -240,6 +240,9 @@ async def make_bot_buy(self, coin_card, dca_trade=False):
                         ordr = await self.try_trade_all(ex, cp, True)
                     else:
                         msg = kind + ' error in making buy of ' + cp + ': ' + str(e)
+                        if '1000ms ahead' in str(e):
+                            await ex.load_time_difference()
+                            msg += '. Attempting to resync Clocks. If This error continues, use the clock command to see more.'
                         coin_card.active = False
                         await broadcast({'action': 'update_cc', 'card': coin_card.to_dict()})
                         await self.my_msg(msg, to_tele=True, to_broad=True)
@@ -282,6 +285,9 @@ async def make_bot_buy(self, coin_card, dca_trade=False):
 
     except Exception as e:
         msg = 'Error in Trying to buy: ' + str(e)
+        if '1000ms ahead' in str(e):
+            await ex.load_time_difference()
+            msg += '. Attempting to resync Clocks. If This error continues, use the clock command to see more.'
         await self.my_msg(msg, verbose=True)
     # if not args:
     #     for old_card in self.ab_cards:
@@ -525,6 +531,9 @@ async def do_check_trade_sells(self, trades):
                         await self.save()
                     else:
                         msg = tc.kind + ' error in checking sell of ' + sym + ': ' + str(e)
+                        if '1000ms ahead' in str(e):
+                            await ex.load_time_difference()
+                            msg += '. Attempting to resync Clocks. If This error continues, use the clock command to see more.'
                         ordr = None
                         tc.active = False
                         tc.sell_now = False
@@ -661,6 +670,9 @@ async def quick_trade(self, *args):
                     ordr = await ex.create_market_sell_order(cp, amount)
             except Exception as e:
                     msg = 'Error in Quick Trade of ' + cp + ': ' + str(e)
+                    if '1000ms ahead' in str(e):
+                        await ex.load_time_difference()
+                        msg += '. Attempting to resync Clocks. If This error continues, use the clock command to see more.'
                     await self.my_msg(msg, to_tele=True, to_broad=True)
                     ordr = None
                     self.pause_msg = False
@@ -694,5 +706,8 @@ async def quick_trade(self, *args):
             await self.my_msg(msg, to_tele=True, to_broad=True)
         else:
             msg = 'Error in Quick Trade ' + cp + ': ' + str(e)
+            if '1000ms ahead' in str(e):
+                await ex.load_time_difference()
+                msg += '. Attempting to resync Clocks. If This error continues, use the clock command to see more.'
             await self.my_msg(msg, to_tele=True, to_broad=True)
 
