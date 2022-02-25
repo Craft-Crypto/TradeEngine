@@ -129,7 +129,7 @@ class TradeEngine(object):
         try:
             await self.initialize()
         except Exception as e:
-            self.my_msg('Error in Initialization: ' + str(e))
+            await self.my_msg('Error in Initialization: ' + str(e))
 
         while self.running:
             if self.q.empty():
@@ -489,7 +489,10 @@ class TradeEngine(object):
         exchange.balance = {}
         try:
             if exchange.apiKey:
-                bal = await exchange.fetch_balance({'recvWindow': 10000000})
+                try:
+                    bal = await exchange.fetch_balance({'recvWindow': 1000000})
+                except:
+                    bal = await exchange.fetch_balance({'recvWindow': 55000})
                 if str(exchange) == 'Binance' or str(exchange) == 'Binance US':
                     for coin in bal:
                         try:
