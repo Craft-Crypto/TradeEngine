@@ -98,11 +98,15 @@ async def ws_v2(queue):
                 send_data = await get_ab_data(True)
 
             elif data['action'] == 'ab_now':
-                print(data)
+                candles = {}
+                for cc in engine_api.worker.ab_cards:
+                    candles[cc.candle] = 'list'
                 engine_api.worker.ab_active = True
+                for candle in candles:
+                    asyncio.ensure_future(engine_api.worker.check_bot_cards(candle))
                 # await engine_api.worker.check_bot_cards(engine_api.worker.bb_strat.candle)
-                data['action'] = 'ab_data'
-                send_data = await get_ab_data(True)
+                # data['action'] = 'ab_data'
+                # send_data = await get_ab_data(True)
 
             elif data['action'] == 'ab_limit':
                 engine_api.worker.ab_trade_limit = data['limit']

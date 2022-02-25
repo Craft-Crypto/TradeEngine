@@ -124,7 +124,11 @@ async def do_check_bot_cards(self, candle, coin_card, trades):
                     msg = cp + ' ready to sell.'
                     await self.my_msg(msg, verbose=True)
                     coin_card.ready_sell = True
-
+            else:
+                # print(coin_card.coin, coin_card.pair)
+                coin_card.last_update = 'Coin/Pair Not Listed'
+                coin_card.active = False
+                await broadcast({'action': 'update_cc', 'card': coin_card.to_dict()})
 
 async def check_card_trade(coin_card, ohlc, *args):
     # print('starting cp', cp)
