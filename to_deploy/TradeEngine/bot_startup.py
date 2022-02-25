@@ -30,7 +30,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 # -----------------------------------------------------------------------------
-
+import ccxt.binance
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers import cron
 import asyncio

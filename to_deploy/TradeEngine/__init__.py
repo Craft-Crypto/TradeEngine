@@ -489,7 +489,7 @@ class TradeEngine(object):
         exchange.balance = {}
         try:
             if exchange.apiKey:
-                bal = await exchange.fetch_balance({'recvWindow': 55000})
+                bal = await exchange.fetch_balance({'recvWindow': 10000000})
                 if str(exchange) == 'Binance' or str(exchange) == 'Binance US':
                     for coin in bal:
                         try:
