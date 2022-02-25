@@ -291,7 +291,7 @@ async def initialize(self):
     trigs = [t1, t3, t5, t15, t30, t1h, t2h, t4h, t6h, t8h, t12h, t1d]
 
     for i in range(len(candles)):
-        self.sched.add_job(self.check_bot_cards, args=[candles[i]], trigger=trigs[i])
+        self.sched.add_job(self.check_bot_cards, args=[candles[i]], trigger=trigs[i], max_instances=5)
 
     #
     #
@@ -308,8 +308,8 @@ async def initialize(self):
     # self.sched.add_job(self.check_bot_cards, args=['Advanced Bot', '1d'], trigger=t1d)
 
     #
-    self.sched.add_job(self.gather_update_bals, trigger=t1)
-    self.sched.add_job(self.save, trigger=t1)
+    self.sched.add_job(self.gather_update_bals, trigger=t1, max_instances=5)
+    self.sched.add_job(self.save, trigger=t1, max_instances=5)
     #
 
     # Set up server

@@ -362,10 +362,14 @@ async def ws_v2(queue):
             elif data['action'] == 'get_manual_price':
                 ex = engine_api.worker.exchange_selector(data['exchange'])
                 sym = data['symbol'].replace('/', '')
+                if data['symbol'] in ex.markets:
+                    mkt_sym = data['symbol']
+                else:
+                    mkt_sym = sym
                 if sym in ex.prices:
                     send_data = {'price': ex.prices[sym],
-                                 'min_amount': ex.market(sym)['limits']['amount']['min'],
-                                 'min_cost': ex.market(sym)['limits']['cost']['min']
+                                 'min_amount': ex.market(mkt_sym)['limits']['amount']['min'],
+                                 'min_cost': ex.market(mkt_sym)['limits']['cost']['min']
                                  }
                 else:
                     send_data = {'price': 'Error: Symbol Not Listed',
