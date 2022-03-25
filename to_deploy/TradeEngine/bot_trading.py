@@ -130,6 +130,7 @@ async def do_check_bot_cards(self, candle, coin_card, trades):
                 coin_card.active = False
                 await broadcast({'action': 'update_cc', 'card': coin_card.to_dict()})
 
+
 async def check_card_trade(coin_card, ohlc, *args):
     # print('starting cp', cp)
     closes = [p[4] for p in ohlc if p[5] > 0]
@@ -298,7 +299,6 @@ async def make_bot_buy(self, coin_card, dca_trade=False):
     #         if old_card.my_id == card.my_id:
     #             print('FOUND CARDS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
     #             old_card.set_record(card.to_dict())
-
 
 #I need this
 # if card['buy_now']:

@@ -47,6 +47,27 @@ from CraftCrypto_Helpers.BaseRecord import BaseRecord, convert_record
 async def initialize(self):
     # Set up initial variables and such
     await self.my_msg('Initializing...')
+
+    # Now get Telegram Going
+    store = get_store('TeleKeys')
+    await self.my_msg('Starting Telegram Bot...')
+    token = None
+    chat_id = None
+    try:
+        if store:
+            token = store['tele_token']
+            chat_id = store['tele_chat']
+    except Exception as e:
+        await self.my_msg('Error in Loading Telegram Keys: ' + str(e))
+
+    if token and chat_id:
+        await self.my_msg('Connecting to Telegram....', to_broad=True)
+        await self.init_tele_bot(token, chat_id)
+        await self.my_msg('Connected to Telegram.', to_broad=True, to_tele=True)
+    else:
+        await self.my_msg('No Telegram Keys Found.')
+        # await self.q.put('set tele keys')
+
     tt = time.time()
 
     await self.my_msg('Loading Exchanges...')
@@ -88,25 +109,6 @@ async def initialize(self):
     else:
         await self.my_msg('No Keys Found...')
         # await self.q.put('set API keys')
-
-    # Now get Telegram Going
-    store = get_store('TeleKeys')
-    await self.my_msg('Starting Telegram Bot...')
-    token = None
-    chat_id = None
-    try:
-        if store:
-            token = store['tele_token']
-            chat_id = store['tele_chat']
-    except Exception as e:
-        await self.my_msg('Error in Loading Telegram Keys: ' + str(e))
-
-    if token and chat_id:
-        await self.init_tele_bot(token, chat_id)
-        await self.my_msg('Telegram Bot Activated.', to_tele=True)
-    else:
-        await self.my_msg('No Telegram Keys Found.')
-        # await self.q.put('set tele keys')
 
     await self.my_msg('Loading Strategies...')
     store = get_store('BasicStrats')
@@ -264,6 +266,32 @@ async def initialize(self):
     except Exception as e:
         await self.my_msg('Error in loading Saved Bot Cards: ' + str(e))
 
+    # Manual Trade Cards
+    try:
+        store = get_store('ManualTrade')
+        if store:
+            try:
+                for mt in store['mt_cards']:
+                    rec = BaseRecord()
+                    rec.set_record(mt)
+                    self.mt_cards.append(rec)
+                await self.my_msg('Found Basic Bot Trades:')
+            except Exception as e:
+                # print(e)
+                await self.my_msg('Error loading Basic Bot Trades: ' + str(e))
+
+        else:
+            rec = BaseRecord()
+            rec.coin = 'BTC'
+            rec.pair = 'USDT'
+            rec.exchange = 'Binance'
+            self.mt_cards.append(rec)
+            await self.my_msg('No Saved Manual Trades Found.')
+            # await self.q.put('set strat')
+
+    except Exception as e:
+        await self.my_msg('Error in loading Saved Manual Trade Cards: ' + str(e))
+
     #
     # await self.my_msg('Strategy: ' + self.strat_name, False, False)
     # await self.my_msg('Exchange: ' + str(self.active_exchange), False, False)
@@ -291,7 +319,8 @@ async def initialize(self):
     trigs = [t1, t3, t5, t15, t30, t1h, t2h, t4h, t6h, t8h, t12h, t1d]
 
     for i in range(len(candles)):
-        self.sched.add_job(self.check_bot_cards, args=[candles[i]], trigger=trigs[i], max_instances=5)
+        self.sched.add_job(self.check_bot_cards, args=[candles[i]], trigger=trigs[i], max_instances=5,
+                           misfire_grace_time=5, coalesce=True)
 
     #
     #

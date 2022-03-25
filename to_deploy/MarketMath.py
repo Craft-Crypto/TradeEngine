@@ -140,15 +140,15 @@ def determine_buy_sell(indicators, card, closes, i, ):
             make_buy = False
 
     if is_float(card.stoch_val_buy):
-        card.k_val = str(round(k_d[0][i], 1))
-        card.d_val = str(round(k_d[1][i], 1))
+        card.stoch_k_val = str(round(k_d[0][i], 1))
+        card.stoch_d_val = str(round(k_d[1][i], 1))
         if not (k_d[0][i] < float(card.stoch_val_buy) and
                 k_d[1][i] < float(card.stoch_val_buy)):
             make_buy = False
 
     if card.stoch_cross_buy == 'Yes':
-        card.k_val = str(round(k_d[0][i], 1))
-        card.d_val = str(round(k_d[1][i], 1))
+        card.stoch_k_val = str(round(k_d[0][i], 1))
+        card.stoch_d_val = str(round(k_d[1][i], 1))
         if not (k_d[0][i] > k_d[1][i] and k_d[0][i-1] < k_d[1][i-1]):
             make_buy = False
 
@@ -313,23 +313,27 @@ def STOCH(ohlc):
     # 14 day period
     # d is 3 period sma of k
     k = [0]
-    for i in range(1, len(ohlc) + 1):
-        max_price = 0
-        min_price = 1000000000000000000000000000000000
-        for mp in ohlc[i-14:i]:
-            if mp[2] > max_price:
-                max_price = mp[2]
-            if mp[3] < min_price:
-                min_price = mp[3]
+    for i in range(14, len(ohlc) + 1):
+        lows = [x[3] for x in ohlc[i-14:i]]
+        highs = [x[2] for x in ohlc[i-14:i]]
+        # print(i, ohlc[i-14:i], closes)
+        max_price = max(highs) # 0
+        min_price = min(lows) #1000000000000000000000000000000000
+        # for mp in ohlc[i-14:i]:
+        #     if mp[2] > max_price:
+        #         max_price = mp[2]
+        #     if mp[3] < min_price:
+        #         min_price = mp[3]
         if not max_price == min_price:
             k.append((ohlc[i-1][4] - min_price) / (max_price - min_price) * 100)
         else:
-            k.append(0)
+            k.append(100)
+        # print(max_price, min_price, k[-1])
 
-    avgk = SMA(k, 3)
-    d = SMA(avgk, 3)
+    # avgk = SMA(k, 3)
+    d = SMA(k, 3)
 
-    return [avgk, d]
+    return [k, d]
 
 
 def BB(closes):

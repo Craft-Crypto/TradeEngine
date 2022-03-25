@@ -42,10 +42,11 @@ async def websocket_bin(self):
     while self.running:
         try:
             # outer loop restarted every time the connection fails
-            await self.my_msg('Connecting to Binance Websocket...', to_broad=True)
+            await self.my_msg('Connecting to Binance Websocket...', to_broad=True, to_tele=True)
             websocket = await websockets.connect("wss://stream.binance.com:9443/ws/!ticker@arr")
             test = await websocket.send('{"method": "SUBSCRIBE", "params": ["!ticker@arr"], "id": 1}')
             try:
+                await self.my_msg('Connected to Binance.', to_broad=True, to_tele=True)
                 while self.running:
                     # listener loop
                     try:
@@ -76,10 +77,11 @@ async def websocket_binUS(self):
     while self.running:
         try:
             # outer loop restarted every time the connection fails
-            await self.my_msg('Connecting to Binance US Websocket...', to_broad=True)
+            await self.my_msg('Connecting to Binance US Websocket...', to_broad=True, to_tele=True)
             websocket = await websockets.connect("wss://stream.binance.us:9443/ws/!ticker@arr")
             test = await websocket.send('{"method": "SUBSCRIBE", "params": ["!ticker@arr"], "id": 1}')
             try:
+                await self.my_msg('Connected to Binance US.', to_broad=True, to_tele=True)
                 while self.running:
                     # listener loop
                     try:
@@ -109,10 +111,11 @@ async def websocket_bm(self):
     while self.running:
         try:
             # outer loop restarted every time the connection fails
-            await self.my_msg('Connecting to BitMEX Websocket...', to_broad=True)
+            await self.my_msg('Connecting to BitMEX Websocket...', to_broad=True, to_tele=True)
             websocket = await websockets.connect("wss://ws.bitmex.com/realtime/?subscribe=trade")
             # test = await websocket.send('{"method": "SUBSCRIBE", "params": ["!ticker@arr"], "id": 1}')
             try:
+                await self.my_msg('Connected to BitMEX.', to_broad=True, to_tele=True)
                 while self.running:
                     # listener loop
                     try:
@@ -142,12 +145,13 @@ async def websocket_cbp(self):
     while self.running:
         try:
             # outer loop restarted every time the connection fails
-            await self.my_msg('Connecting to Coinbase Pro Websocket...', to_broad=True)
+            await self.my_msg('Connecting to Coinbase Pro Websocket...', to_broad=True, to_tele=True)
             cbp_sym = str(['"{}"'.format(t) for t in self.a_cbp.markets]).replace("'", "").replace('/', '-')
             cbp_msg = '{"type": "subscribe", "product_ids":' + str(cbp_sym) + ', "channels": ["ticker", "heartbeat"]}'
             websocket = await websockets.connect("wss://ws-feed.pro.coinbase.com/")
             test = await websocket.send(cbp_msg)
             try:
+                await self.my_msg('Connected to Coinbase Pro.', to_broad=True, to_tele=True)
                 while self.running:
                     # listener loop
                     try:
@@ -179,7 +183,7 @@ async def websocket_ftx(self):
     while self.running:
         try:
             # outer loop restarted every time the connection fails
-            await self.my_msg('Connecting to FTX Websocket...', to_broad=True)
+            await self.my_msg('Connecting to FTX Websocket...', to_broad=True, to_tele=True)
             ftx_sym = [t for t in self.a_ftx.markets]
             ftx_msg = []
             for sym in ftx_sym:
@@ -188,6 +192,7 @@ async def websocket_ftx(self):
             for msg in ftx_msg:
                 test = await websocket.send(msg)
             try:
+                await self.my_msg('Connected to FTX.', to_broad=True, to_tele=True)
                 while self.running:
                     # listener loop
                     try:
@@ -217,7 +222,7 @@ async def websocket_kraken(self):
     while self.running:
         try:
             # outer loop restarted every time the connection fails
-            await self.my_msg('Connecting to Kraken Websocket...', to_broad=True)
+            await self.my_msg('Connecting to Kraken Websocket...', to_broad=True, to_tele=True)
             kraken_syms = [t for t in self.a_kraken.markets]
             kraken_msg = []#['{"event":"subscribe", "subscription":{"name":"ticker"}, "pair":["BTC/USD"]}']
             i = 0
@@ -242,6 +247,7 @@ async def websocket_kraken(self):
             # test = await websocket.send(kraken_msg)
             #     print('kraken test', test)
             try:
+                await self.my_msg('Connected to Kraken.', to_broad=True, to_tele=True)
                 while self.running:
                     # listener loop
                     try:
@@ -255,8 +261,9 @@ async def websocket_kraken(self):
                         except Exception as e:
                             await self.my_msg('Kraken Websocket Error: ' + str(e), to_tele=True, to_broad=True)
                     except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosed) as e:
-                        await self.my_msg('Kraken Websocket Secondary Error: ' + str(e), to_tele=True, to_broad=True)
-                        await asyncio.sleep(1)
+                        await self.my_msg(f'Kraken Websocket Secondary Error: {str(e)}. Attempting to reconnect...',
+                                          to_tele=True, to_broad=True)
+                        await asyncio.sleep(5)
                         break  # inner loop
 
                     if not self.a_kraken.socket_connected:
@@ -267,6 +274,9 @@ async def websocket_kraken(self):
             await asyncio.sleep(5)
         except Exception as e:
             await self.my_msg('Kraken Websocket Tertiary Error: ' + str(e), to_tele=True, to_broad=True)
+            if '1013' in str(e):
+                await self.my_msg('Retrying connection in 5 minutes...', to_tele=True, to_broad=True)
+                await asyncio.sleep(295)
             await asyncio.sleep(5)
 
 

@@ -77,7 +77,7 @@ def print_status_info(info):
 
 if __name__ == "__main__":
     te_name = 'TradeEngine'
-    te_version = '1.0.17'
+    te_version = '1.0.18'
 
     try:
         print(f'Welcome to {te_name} v{te_version}')

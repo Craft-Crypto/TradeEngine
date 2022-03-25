@@ -119,6 +119,9 @@ async def ws_v2(queue):
             elif data['action'] == 'add_ab_data':
                 await engine_api.worker.add_ab_card(data['coins'], data['base'], data['trigs'])
 
+            elif data['action'] == 'mt_data':
+                send_data = await get_mt_data(True)
+
             elif data['action'] == 'api_keys':
                 send_data = await get_api_data(True)
             elif data['action'] == 'msgs':
@@ -388,6 +391,15 @@ async def ws_v2(queue):
                 send_data = {'waiting': engine_api.worker.in_waiting}
                 # print(send_data)
 
+            elif data['action'] == 'add_mt_tab':
+                print('here')
+                await engine_api.worker.add_mt_tab(data['cp'], data['exchange'])
+
+            elif data['action'] == 'add_mt_trade':
+                print('here')
+                await engine_api.worker.add_mt_trade(data['tab_id'], data['trade_data'], data['follow_up_id'])
+                # print(send_data)
+
             if send_data:
                 try:
                     await websocket.send_json(data | send_data)
@@ -479,6 +491,15 @@ async def get_ab_data(*args):
     data['trades'] = engine_api.worker.ab_trades
     data['trade_limit'] = engine_api.worker.ab_trade_limit
     data['active'] = engine_api.worker.ab_active
+    if args:
+        return data
+    return jsonify(data)
+
+
+@engine_api.route(pfx + '/mt_data', methods=['GET'])
+async def get_mt_data(*args):
+    data = {}
+    data['tabs'] = engine_api.worker.mt_cards
     if args:
         return data
     return jsonify(data)

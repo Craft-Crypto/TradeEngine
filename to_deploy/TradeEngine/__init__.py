@@ -53,6 +53,7 @@ class TradeEngine(object):
     from .input_management import manage_input
     from .bot_trading import check_bot_cards, do_check_bot_cards, make_bot_buy, quick_trade
     from .bot_trading import add_trade_card, update_card_trade_data, check_trade_sells, do_check_trade_sells
+    from .manual_trades import add_mt_tab, add_mt_trade
 
     def __init__(self, **kwargs):
         # Setup Server
@@ -92,6 +93,10 @@ class TradeEngine(object):
         self.ab_trade_limit = '3'
         self.ab_active = False
         self.ab_sells_lock = False
+
+        # Setup Manual Trades
+        self.mt_cards = []
+        self.mt_sells_lock = False
 
         # Other Setup
         self.my_id = time.time()
@@ -704,6 +709,7 @@ class TradeEngine(object):
                 first = ohlc[0][0]
                 last = ohlc[-1][0]
                 timediff = last - first
+                # print(ex, candle, cp, len(ohlc), timediff)
             else:
                 msg = 'Error in collecting candles for: ' + cp + ' on ' + str(ex)
                 await self.my_msg(msg, to_tele=True, to_broad=True)
@@ -992,8 +998,8 @@ class TradeEngine(object):
             return [None, None]
 
     async def get_my_id(self):
-        self.my_id += 1
-        return str(self.my_id)
+        # self.my_id += 1
+        return str(time.time_ns())
 
     async def save(self, *args):
         # API Keys
@@ -1036,6 +1042,13 @@ class TradeEngine(object):
             'ab_trade_limit': self.ab_trade_limit,
         }
         save_store('AdvancedBot', store)
+
+        # Manual Trade Data
+        mt_cards = [rec.to_dict() for rec in self.mt_cards]
+        store = {
+            'mt_cards': ab_cards,
+        }
+        save_store('ManualTrade', store)
 
         msg = 'Saved Data.'
         await self.my_msg(msg, verbose=True)
